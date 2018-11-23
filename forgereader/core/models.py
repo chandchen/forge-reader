@@ -15,6 +15,7 @@ class ForgeUser(models.Model):
 
 class Label(models.Model):
     name = models.CharField(max_length=30, unique=True)
+    description = models.CharField(max_length=256, null=True, blank=True)
     when = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -26,6 +27,8 @@ class Label(models.Model):
 
 class Milestone(models.Model):
     name = models.CharField(max_length=30, unique=True)
+    milestone_range = models.CharField(max_length=128, null=True, blank=True)
+    status = models.CharField(max_length=128, null=True, blank=True)
     when = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
