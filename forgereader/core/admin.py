@@ -24,7 +24,7 @@ class MilestoneAdmin(admin.ModelAdmin):
 
 class IssueAdmin(admin.ModelAdmin):
     model = Issue
-    list_display = ('title', 'serial_number', 'when')
+    list_display = ('title', 'number', 'when')
     raw_id_fields = ('author', 'assignee', 'milestone')
 
 

@@ -55,6 +55,23 @@ def resolve_url(state, assignee, author='', milestone='', label=''):
     return repo_url.replace(' ', '')
 
 
+def fetch_issue_detail(issue):
+    repo_path = '/channelfix/channelfix'
+    repo_url = settings.FORGE_URL + repo_path + '/issues/{}'.format(issue)
+    url = repo_url.replace(' ', '')
+    html = sessions.get(url, headers=headers).text
+    soup = BeautifulSoup(html, features="html.parser")
+
+    try:
+        milestone = soup.find(
+            'div', class_="milestone").find('div', class_="value").find(
+            'a', class_="bold").get_text().replace('\n', '')
+    except Exception as e:
+        milestone = ''
+
+    print([milestone, ])
+
+
 def fetch_user_issue_list(url):
     html = sessions.get(url, headers=headers).text
     soup = BeautifulSoup(html, features="html.parser")
@@ -62,23 +79,16 @@ def fetch_user_issue_list(url):
     contents = soup.find(
         'ul', class_="issues-list").findAll('li', class_="issue")
 
-    print('Loading: {}'.format(url))
-
     for content in contents:
-        # counts = contents.index(content)
-        # print('Loading page 1, No.{} issue...'.format(counts + 1))
         try:
-            title = content.find('span', class_="issue-title-text").get_text()
+            title = content.find(
+                'span', class_="issue-title-text").get_text().replace('\n', '')
         except Exception as e:
             title = ''
         try:
-            link = content.find(
-                'span', class_="issue-title-text").find('a')['href']
-        except Exception as e:
-            link = ''
-        try:
             number = content.find(
-                'span', class_="issuable-reference").get_text()
+                'span', class_="issuable-reference").get_text().replace(
+                '\n', '').replace('#', '')
         except Exception as e:
             number = ''
         try:
@@ -95,29 +105,31 @@ def fetch_user_issue_list(url):
         except Exception as e:
             labels = []
 
-        if link:
-            detail_url = settings.FORGE_URL + link
-            html0 = sessions.get(detail_url, headers=headers).text
-            soup0 = BeautifulSoup(html0, features="html.parser")
-            try:
-                contents0 = soup0.find(
-                    'ul', class_="main-notes-list").findAll(
-                    'li', class_="timeline-entry")
-                for content0 in contents0:
-                        owner = content0.find(
-                            'span',
-                            class_="note-header-author-name").get_text()
-                        action = content0.find(
-                            'span', class_="system-note-message").find(
-                            'span').get_text()
-                        action_info = {
-                            'owner': owner,
-                            'action': action
-                        }
-            except Exception as e:
-                action_info = {}
+        # if link:
+        #     detail_url = settings.FORGE_URL + link
+        #     html0 = sessions.get(detail_url, headers=headers).text
+        #     soup0 = BeautifulSoup(html0, features="html.parser")
+        #     try:
+        #         contents0 = soup0.find(
+        #             'ul', class_="main-notes-list").findAll(
+        #             'li', class_="timeline-entry")
+        #         for content0 in contents0:
+        #                 owner = content0.find(
+        #                     'span',
+        #                     class_="note-header-author-name").get_text()
+        #                 action = content0.find(
+        #                     'span', class_="system-note-message").find(
+        #                     'span').get_text()
+        #                 action_info = {
+        #                     'owner': owner,
+        #                     'action': action
+        #                 }
+        #     except Exception as e:
+        #         action_info = {}
 
-        print([number, title, author, link, labels, action_info])
+        print([number, title, author, labels])
+
+        fetch_issue_detail(number)
 
 
 def auto_run_forge():
@@ -279,56 +291,3 @@ def update_forgeuser_data():
                         'username': username,
                         'full_name': full_name
                     })
-
-
-def update_issue_detail(issue=1069):
-    cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
-    cs.login()
-
-    repo_path = '/channelfix/channelfix'
-    repo_url = settings.FORGE_URL + repo_path + '/issues/{}'.format(issue)
-    url = repo_url.replace(' ', '')
-    html = sessions.get(url, headers=headers).text
-    soup = BeautifulSoup(html, features="html.parser")
-
-    try:
-        title = soup.find(
-            'div', class_="issue-details").find(
-            'div', class_="title-container").find(
-            'h2', class_="title").get_text().replace('\n', '')
-    except Exception as e:
-        title = ''
-
-    try:
-        author = soup.find(
-            'div', class_="issuable-meta").find(
-            'span', class_="author")['title'].replace('@', '')
-    except Exception as e:
-        author = ''
-
-    try:
-        assignee = soup.find(
-            'div', class_="assignee").find(
-            'span', class_="username").get_text().replace('\n', '')
-    except Exception as e:
-        assignee = ''
-
-    try:
-        milestone = soup.find(
-            'div', class_="milestone").find('div', class_="value").find(
-            'a', class_="bold").get_text().replace('\n', '')
-    except Exception as e:
-        milestone = ''
-
-    labels = []
-    try:
-        contents = soup.find(
-            'div', class_="labels").find(
-            'div', class_="issuable-show-labels").findAll('a')
-        for content in contents:
-            label = content.find('span').get_text().replace('\n', '')
-            if label:
-                labels.append(label)
-    except Exception as e:
-        pass
-    print([title, author, assignee, milestone, label])

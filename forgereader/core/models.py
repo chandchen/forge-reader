@@ -46,7 +46,7 @@ class Issue(models.Model):
     assignee = models.ForeignKey(
         ForgeUser, on_delete=models.CASCADE, null=True, blank=True,
         related_name='assigned_issues')
-    serial_number = models.CharField(max_length=64)
+    number = models.IntegerField(default=0)
     milestone = models.ForeignKey(
         Milestone, on_delete=models.CASCADE, related_name='issues')
 
