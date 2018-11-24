@@ -1,6 +1,12 @@
 from django.db import models
 
 
+ISSUE_STATUS_CHOICES = (
+    (0, 'open'),
+    (1, 'closed'),
+)
+
+
 class ForgeUser(models.Model):
     username = models.CharField(max_length=30, unique=True)
     full_name = models.CharField(max_length=150, blank=True)
@@ -48,8 +54,21 @@ class Issue(models.Model):
         related_name='assigned_issues')
     number = models.IntegerField(default=0)
     milestone = models.ForeignKey(
-        Milestone, on_delete=models.CASCADE, related_name='issues')
+        Milestone, on_delete=models.CASCADE, related_name='issues',
+        null=True, blank=True)
 
-    labels = models.ManyToManyField(Label, related_name='issues', blank=True)
+    labels = models.ManyToManyField(
+        Label, related_name='issues', blank=True)
 
+    status = models.IntegerField(
+        choices=ISSUE_STATUS_CHOICES, default=0)
     when = models.DateTimeField(auto_now_add=True)
+
+    OPEN = 0
+    CLOSED = 1
+
+    def __str__(self):
+        return '{} - {}'.format(self.title, self.author)
+
+    class Meta:
+        ordering = ['pk']

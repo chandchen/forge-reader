@@ -5,7 +5,8 @@ from django.conf import settings
 
 from bs4 import BeautifulSoup
 
-from forgereader.core.models import ForgeUser, Milestone, Label
+from forgereader.core.models import (
+    ForgeUser, Milestone, Label, Issue)
 
 
 headers = {
@@ -41,10 +42,10 @@ class Authentication:
             print('Login Failed!')
 
 
-def resolve_url(state, assignee, author='', milestone='', label=''):
+def resolve_url(state, assignee, author='', milestone='', label='', index=1):
     repo_path = '/channelfix/channelfix'
     repo_url = settings.FORGE_URL + repo_path + '/issues?cope=all&utf8=%E2%9C%93&\
-        state={}&assignee_username={}'.format(state, assignee)
+        state={}&assignee_username={}&page={}'.format(state, assignee, index)
 
     if author:
         repo_url += '&author_username={}'.format(author)
@@ -62,17 +63,18 @@ def fetch_issue_detail(issue):
     html = sessions.get(url, headers=headers).text
     soup = BeautifulSoup(html, features="html.parser")
 
+    extra_info = {}
     try:
         milestone = soup.find(
             'div', class_="milestone").find('div', class_="value").find(
             'a', class_="bold").get_text().replace('\n', '')
     except Exception as e:
         milestone = ''
+    extra_info['milestone'] = milestone
+    return extra_info
 
-    print([milestone, ])
 
-
-def fetch_user_issue_list(url):
+def fetch_user_issue_list(url, assignee=None):
     html = sessions.get(url, headers=headers).text
     soup = BeautifulSoup(html, features="html.parser")
 
@@ -92,9 +94,31 @@ def fetch_user_issue_list(url):
         except Exception as e:
             number = ''
         try:
-            author = content.find('span', class_="author").get_text()
+            author = content.find(
+                'span', class_="author").get_text().replace('\n', '')
         except Exception as e:
             author = ''
+
+        if author:
+            author = ForgeUser.objects.filter(full_name=author).first()
+        else:
+            author = None
+
+        if assignee:
+            assignee = ForgeUser.objects.filter(username=assignee).first()
+        else:
+            assignee = None
+
+        try:
+            status = content.find(
+                'li', class_="issuable-status").get_text().replace('\n', '')
+        except Exception as e:
+            status = ''
+
+        if status == 'CLOSED':
+            status = Issue.CLOSED
+        else:
+            status = Issue.OPEN
 
         labels = []
         try:
@@ -127,9 +151,31 @@ def fetch_user_issue_list(url):
         #     except Exception as e:
         #         action_info = {}
 
-        print([number, title, author, labels])
+        extra_info = fetch_issue_detail(number)
 
-        fetch_issue_detail(number)
+        milestone = extra_info['milestone']
+
+        if milestone:
+            milestone = Milestone.objects.filter(name=milestone).first()
+        else:
+            milestone = None
+
+        infos = {
+            'title': title,
+            'author': author,
+            'assignee': assignee,
+            'number': int(number),
+            'status': status,
+            'milestone': milestone
+        }
+
+        obj, created = Issue.objects.update_or_create(
+            number=int(number), defaults=infos)
+
+        if labels:
+            label = Label.objects.filter(name__in=labels)
+            if label.exists():
+                obj.labels.add(*label)
 
 
 def auto_run_forge():
@@ -161,9 +207,20 @@ def auto_run_forge():
     # label = input('标签(Bug/空格用%20)： ')
     # if label:
     #     keywords['label'] = label
-
-    url = resolve_url(**keywords)
-    fetch_user_issue_list(url)
+    repo_path = '/channelfix/channelfix'
+    index_url = settings.FORGE_URL + repo_path + '/issues?scope=all&utf8=✓&\
+        state=all&author_username='.format(keywords['assignee'])
+    html0 = sessions.get(index_url, headers=headers).text
+    soup0 = BeautifulSoup(html0, features="html.parser")
+    try:
+        bottom = soup0.findAll(
+            'li', class_="js-pagination-page")[-1].get_text().replace('\n', '')
+    except Exception as e:
+        bottom = 2
+    for i in range(1, int(bottom) + 1):
+        keywords['index'] = i
+        url = resolve_url(**keywords)
+        fetch_user_issue_list(url, assignee=keywords['assignee'])
 
 
 def update_milestone_data():
@@ -198,7 +255,7 @@ def update_milestone_data():
             status = ''
 
         if name:
-            Milestone.objects.get_or_create(
+            Milestone.objects.update_or_create(
                 name=name, defaults={
                     'name': name,
                     'milestone_range': milestone_range,
@@ -217,8 +274,8 @@ def update_label_data():
         bottom = soup0.findAll(
             'li', class_="js-pagination-page")[-1].get_text().replace('\n', '')
     except Exception as e:
-        bottom = 0
-    for i in range(1, bottom):
+        bottom = 2
+    for i in range(1, int(bottom) + 1):
         repo_url = settings.FORGE_URL + repo_path + '/labels?page={}'.format(i)
         url = repo_url.replace(' ', '')
         html = sessions.get(url, headers=headers).text
@@ -242,7 +299,7 @@ def update_label_data():
             except Exception as e:
                 description = ''
             if name:
-                Label.objects.get_or_create(
+                Label.objects.update_or_create(
                     name=name, defaults={
                         'name': name,
                         'description': description
@@ -261,7 +318,7 @@ def update_forgeuser_data():
         bottom = soup0.findAll(
             'li', class_="js-pagination-page")[-1].get_text().replace('\n', '')
     except Exception as e:
-        bottom = 0
+        bottom = 2
     for i in range(1, int(bottom) + 1):
         repo_url = settings.FORGE_URL + repo_path + '/project_members?page\
             ={}'.format(i)
@@ -286,7 +343,7 @@ def update_forgeuser_data():
             except Exception as e:
                 full_name = ''
             if username:
-                ForgeUser.objects.get_or_create(
+                ForgeUser.objects.update_or_create(
                     username=username, defaults={
                         'username': username,
                         'full_name': full_name
