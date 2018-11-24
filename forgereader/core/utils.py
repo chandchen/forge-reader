@@ -6,7 +6,7 @@ from django.conf import settings
 from bs4 import BeautifulSoup
 
 from forgereader.core.models import (
-    ForgeUser, Milestone, Label, Issue)
+    ForgeUser, Milestone, Label, Issue, Project)
 
 
 headers = {
@@ -42,23 +42,9 @@ class Authentication:
             print('Login Failed!')
 
 
-def resolve_url(state, assignee, author='', milestone='', label='', index=1):
-    repo_path = '/channelfix/channelfix'
-    repo_url = settings.FORGE_URL + repo_path + '/issues?cope=all&utf8=%E2%9C%93&\
-        state={}&assignee_username={}&page={}'.format(state, assignee, index)
-
-    if author:
-        repo_url += '&author_username={}'.format(author)
-    if milestone:
-        repo_url += '&milestone_title={}'.format(milestone)
-    if label:
-        repo_url += '&label_name[]={}'.format(label)
-    return repo_url.replace(' ', '')
-
-
-def fetch_issue_detail(issue):
-    repo_path = '/channelfix/channelfix'
-    repo_url = settings.FORGE_URL + repo_path + '/issues/{}'.format(issue)
+def fetch_issue_detail(project, issue):
+    repo_url = settings.FORGE_URL + '/{}/issues/{}'.format(
+        project.repo_name, issue)
     url = repo_url.replace(' ', '')
     html = sessions.get(url, headers=headers).text
     soup = BeautifulSoup(html, features="html.parser")
@@ -74,7 +60,7 @@ def fetch_issue_detail(issue):
     return extra_info
 
 
-def fetch_user_issue_list(url, assignee=None):
+def fetch_issue_list(project, url):
     html = sessions.get(url, headers=headers).text
     soup = BeautifulSoup(html, features="html.parser")
 
@@ -104,8 +90,16 @@ def fetch_user_issue_list(url, assignee=None):
         else:
             author = None
 
+        try:
+            assignee = content.find(
+                'div', class_="issuable-meta").find(
+                'a', class_="author-link")['title'].replace(
+                '\n', '').replace('Assigned to ', '')
+        except Exception as e:
+            assignee = ''
+
         if assignee:
-            assignee = ForgeUser.objects.filter(username=assignee).first()
+            assignee = ForgeUser.objects.filter(full_name=assignee).first()
         else:
             assignee = None
 
@@ -129,29 +123,7 @@ def fetch_user_issue_list(url, assignee=None):
         except Exception as e:
             labels = []
 
-        # if link:
-        #     detail_url = settings.FORGE_URL + link
-        #     html0 = sessions.get(detail_url, headers=headers).text
-        #     soup0 = BeautifulSoup(html0, features="html.parser")
-        #     try:
-        #         contents0 = soup0.find(
-        #             'ul', class_="main-notes-list").findAll(
-        #             'li', class_="timeline-entry")
-        #         for content0 in contents0:
-        #                 owner = content0.find(
-        #                     'span',
-        #                     class_="note-header-author-name").get_text()
-        #                 action = content0.find(
-        #                     'span', class_="system-note-message").find(
-        #                     'span').get_text()
-        #                 action_info = {
-        #                     'owner': owner,
-        #                     'action': action
-        #                 }
-        #     except Exception as e:
-        #         action_info = {}
-
-        extra_info = fetch_issue_detail(number)
+        extra_info = fetch_issue_detail(project, number)
 
         milestone = extra_info['milestone']
 
@@ -166,7 +138,8 @@ def fetch_user_issue_list(url, assignee=None):
             'assignee': assignee,
             'number': int(number),
             'status': status,
-            'milestone': milestone
+            'milestone': milestone,
+            'project': project
         }
 
         obj, created = Issue.objects.update_or_create(
@@ -178,38 +151,14 @@ def fetch_user_issue_list(url, assignee=None):
                 obj.labels.add(*label)
 
 
-def auto_run_forge():
+def update_issue_data(project=None):
+    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs.login()
 
-    cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
-    cs.login()
-
-    keywords = {
-        'state': 'all',
-        'assignee': 'chand.chen'
-    }
-
-    # state = input('状态(opened/closed/all): ')
-    # if state:
-    #     keywords['state'] = state
-    # else:
-    #     print('状态不能为空！')
-    # assignee = input('被指派人(username): ')
-    # if assignee:
-    #     keywords['assignee'] = assignee
-    # else:
-    #     print('指派人不能为空！')
-    # author = input('创建人(username): ')
-    # if author:
-    #     keywords['author'] = author
-    # milestone = input('里程碑(空格用%20)： ')
-    # if milestone:
-    #     keywords['milestone'] = milestone
-    # label = input('标签(Bug/空格用%20)： ')
-    # if label:
-    #     keywords['label'] = label
-    repo_path = '/channelfix/channelfix'
-    index_url = settings.FORGE_URL + repo_path + '/issues?scope=all&utf8=✓&\
-        state=all&author_username='.format(keywords['assignee'])
+    # project = Project.objects.filter(
+    #     name='channelfix', namespace='channelfix').first()
+    index_url = settings.FORGE_URL + '/{}/issues?scope=all&utf8=✓&\
+        state=all'.format(project.repo_name)
     html0 = sessions.get(index_url, headers=headers).text
     soup0 = BeautifulSoup(html0, features="html.parser")
     try:
@@ -218,18 +167,17 @@ def auto_run_forge():
     except Exception as e:
         bottom = 2
     for i in range(1, int(bottom) + 1):
-        keywords['index'] = i
-        url = resolve_url(**keywords)
-        fetch_user_issue_list(url, assignee=keywords['assignee'])
+        url = settings.FORGE_URL + '/{}/issues?page={}&scope=all&\
+            state=all'.format(project.repo_name, i)
+        fetch_issue_list(project, url)
 
 
-def update_milestone_data():
-    cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
-    cs.login()
+def update_milestone_data(project):
+    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs.login()
 
-    repo_path = '/channelfix/channelfix'
-    repo_url = settings.FORGE_URL + repo_path + '/milestones\
-        ?sort=due_date_desc&state=all'
+    repo_url = settings.FORGE_URL + '/{}/milestones\
+        ?sort=due_date_desc&state=all'.format(project.repo_name)
     url = repo_url.replace(' ', '')
     html = sessions.get(url, headers=headers).text
     soup = BeautifulSoup(html, features="html.parser")
@@ -259,15 +207,15 @@ def update_milestone_data():
                 name=name, defaults={
                     'name': name,
                     'milestone_range': milestone_range,
-                    'status': status})
+                    'status': status,
+                    'project': project})
 
 
-def update_label_data():
-    cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
-    cs.login()
+def update_label_data(project):
+    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs.login()
 
-    repo_path = '/channelfix/channelfix'
-    index_url = settings.FORGE_URL + repo_path + '/labels'
+    index_url = settings.FORGE_URL + '/{}/labels'.format(project.repo_name)
     html0 = sessions.get(index_url, headers=headers).text
     soup0 = BeautifulSoup(html0, features="html.parser")
     try:
@@ -276,7 +224,8 @@ def update_label_data():
     except Exception as e:
         bottom = 2
     for i in range(1, int(bottom) + 1):
-        repo_url = settings.FORGE_URL + repo_path + '/labels?page={}'.format(i)
+        repo_url = settings.FORGE_URL + '/{}/labels?page={}'.format(
+            project.repo_name, i)
         url = repo_url.replace(' ', '')
         html = sessions.get(url, headers=headers).text
         soup = BeautifulSoup(html, features="html.parser")
@@ -302,16 +251,17 @@ def update_label_data():
                 Label.objects.update_or_create(
                     name=name, defaults={
                         'name': name,
-                        'description': description
+                        'description': description,
+                        'project': project
                     })
 
 
 def update_forgeuser_data():
-    cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
-    cs.login()
+    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs.login()
 
-    repo_path = '/channelfix/channelfix'
-    index_url = settings.FORGE_URL + repo_path + '/project_members'
+    index_url = settings.FORGE_URL + '/{}/project_members'.format(
+        settings.DEFAULT_REPO)
     html0 = sessions.get(index_url, headers=headers).text
     soup0 = BeautifulSoup(html0, features="html.parser")
     try:
@@ -320,8 +270,8 @@ def update_forgeuser_data():
     except Exception as e:
         bottom = 2
     for i in range(1, int(bottom) + 1):
-        repo_url = settings.FORGE_URL + repo_path + '/project_members?page\
-            ={}'.format(i)
+        repo_url = settings.FORGE_URL + '/{}/project_members?page\
+            ={}'.format(settings.DEFAULT_REPO, i)
         url = repo_url.replace(' ', '')
         html = sessions.get(url, headers=headers).text
         soup = BeautifulSoup(html, features="html.parser")
@@ -348,3 +298,63 @@ def update_forgeuser_data():
                         'username': username,
                         'full_name': full_name
                     })
+
+
+def update_project_data():
+    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs.login()
+
+    html0 = sessions.get(settings.FORGE_URL, headers=headers).text
+    soup0 = BeautifulSoup(html0, features="html.parser")
+    try:
+        bottom = soup0.findAll(
+            'li', class_="js-pagination-page")[-1].get_text().replace('\n', '')
+    except Exception as e:
+        bottom = 2
+    for i in range(1, int(bottom) + 1):
+        repo_url = settings.FORGE_URL + '/?non_archived=true&page={}&sort=\
+            latest_activity_desc'.format(i)
+        url = repo_url.replace(' ', '')
+        html = sessions.get(url, headers=headers).text
+        soup = BeautifulSoup(html, features="html.parser")
+        contents = soup.find(
+            'ul', class_="projects-list").findAll(
+            'li', class_="project-row")
+
+        for content in contents:
+            try:
+                namespace = content.find(
+                    'span', class_="namespace-name").get_text().replace(
+                    '\n', '').replace('/', '')
+            except Exception as e:
+                namespace = ''
+
+            try:
+                name = content.find(
+                    'span', class_="project-name").get_text().replace(
+                    '\n', '')
+            except Exception as e:
+                name = ''
+            if namespace and name:
+                Project.objects.update_or_create(
+                    name=name,
+                    namespace=namespace,
+                    defaults={'name': name, 'namespace': namespace})
+
+
+def update_forge_data():
+    cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    cs.login()
+
+    update_project_data()
+    update_forgeuser_data()
+
+    projects = Project.objects.filter(
+        namespace=settings.REPO_NAMESPACE,
+        name__in=settings.REPO_NAME)
+    if projects.exists():
+        for project in projects:
+            update_label_data(project=project)
+            update_milestone_data(project=project)
+            update_issue_data(project=project)
+    print('Greeting, All data up to date!')

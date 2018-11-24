@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1.0">
+      <title>Projects &bull; Dashboard</title>
+      <link rel="stylesheet" type="text/css" href="{% static "core/css/bootstrap.min.css" %}">
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <a class="navbar-brand" href="{{ forge_url }}">GitLab</a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor03" aria-controls="navbarColor03" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarColor03">
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'project-list' %}">Projects</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'issue-list' %}">Issues</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Milestone</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Labels</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'user-list' %}">Members</a>
+              </li>
+            </ul>
+            <form class="form-inline my-2 my-lg-0">
+              <input class="form-control mr-sm-2" type="text" placeholder="Search">
+              <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+            </form>
+          </div>
+        </nav>
+        <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+            channelfix / channelfix
+                <span class="badge badge-primary badge-pill">14</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+            channelfix / ios-app
+                <span class="badge badge-primary badge-pill">2</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+            channelfix / channelfix-android
+                <span class="badge badge-primary badge-pill">1</span>
+            </li>
+        </ul>
+    </body>
+</html>

@@ -125,6 +125,11 @@ FORGE_URL = 'https://gitlab.com'
 FORGE_USERNAME = 'username'
 FORGE_PASSWORD = 'password'
 
+DEFAULT_REPO = ''
+
+REPO_NAMESPACE = ''
+REPO_NAME = []
+
 try:
     from .local_settings import *
 except ImportError:

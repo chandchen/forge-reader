@@ -19,10 +19,28 @@ class ForgeUser(models.Model):
         ordering = ['pk']
 
 
+class Project(models.Model):
+    name = models.CharField(max_length=30)
+    namespace = models.CharField(max_length=30)
+    when = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['pk']
+
+    @property
+    def repo_name(self):
+        return '{}/{}'.format(self.namespace, self.name)
+
+
 class Label(models.Model):
     name = models.CharField(max_length=30, unique=True)
     description = models.CharField(max_length=256, null=True, blank=True)
     when = models.DateTimeField(auto_now_add=True)
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name='labels')
 
     def __str__(self):
         return self.name
@@ -36,6 +54,8 @@ class Milestone(models.Model):
     milestone_range = models.CharField(max_length=128, null=True, blank=True)
     status = models.CharField(max_length=128, null=True, blank=True)
     when = models.DateTimeField(auto_now_add=True)
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name='milestones')
 
     def __str__(self):
         return self.name
@@ -63,6 +83,8 @@ class Issue(models.Model):
     status = models.IntegerField(
         choices=ISSUE_STATUS_CHOICES, default=0)
     when = models.DateTimeField(auto_now_add=True)
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name='issues')
 
     OPEN = 0
     CLOSED = 1

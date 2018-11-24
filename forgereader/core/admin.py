@@ -1,13 +1,19 @@
 from django.contrib import admin
 
 from forgereader.core.models import (
-    ForgeUser, Label, Milestone, Issue)
+    ForgeUser, Label, Milestone, Issue, Project)
 
 
 class ForgeUserAdmin(admin.ModelAdmin):
     model = ForgeUser
     list_display = ('username', 'full_name', 'when')
     search_fields = ('username', 'full_name')
+
+
+class ProjectAdmin(admin.ModelAdmin):
+    model = Project
+    list_display = ('name', 'namespace', 'when')
+    search_fields = ('name', 'namespace')
 
 
 class LabelAdmin(admin.ModelAdmin):
@@ -29,6 +35,7 @@ class IssueAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ForgeUser, ForgeUserAdmin)
+admin.site.register(Project, ProjectAdmin)
 admin.site.register(Label, LabelAdmin)
 admin.site.register(Milestone, MilestoneAdmin)
 admin.site.register(Issue, IssueAdmin)

@@ -18,11 +18,13 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 
-from forgereader.core.views import IssueListView, ForgeUserListView
+from forgereader.core.views import (
+    IssueListView, ForgeUserListView, ProjectListView)
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('issues/', IssueListView.as_view(), name='issue-list'),
     path('users/', ForgeUserListView.as_view(), name='user-list'),
+    path('projects/', ProjectListView.as_view(), name='project-list'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

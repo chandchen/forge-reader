@@ -11,7 +11,7 @@ forge_url = settings.FORGE_URL
 
 
 class IssueListView(TemplateView):
-    template_name = "core/index.html"
+    template_name = "core/issue_list.html"
 
     def get(self, request, *args, **kwargs):
         # form = self.form_class(initial=self.initial)
@@ -48,3 +48,7 @@ class ForgeUserListView(TemplateView):
         return render(request, self.template_name, {
             'users': user_list,
             'forge_url': forge_url})
+
+
+class ProjectListView(TemplateView):
+    template_name = "core/project_list.html"
