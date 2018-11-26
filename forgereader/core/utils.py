@@ -260,7 +260,7 @@ def update_forgeuser_data():
     # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
     # cs.login()
 
-    index_url = settings.FORGE_URL + '/{}/project_members'.format(
+    index_url = settings.FORGE_URL + '/{}/project_members?'.format(
         settings.DEFAULT_REPO)
     html0 = sessions.get(index_url, headers=headers).text
     soup0 = BeautifulSoup(html0, features="html.parser")
@@ -273,6 +273,7 @@ def update_forgeuser_data():
         repo_url = settings.FORGE_URL + '/{}/project_members?page\
             ={}'.format(settings.DEFAULT_REPO, i)
         url = repo_url.replace(' ', '')
+        print(url)
         html = sessions.get(url, headers=headers).text
         soup = BeautifulSoup(html, features="html.parser")
 

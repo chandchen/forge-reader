@@ -1,10 +1,12 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import HttpResponseRedirect
 
 from django.conf import settings
 
-from forgereader.core.models import Issue, ForgeUser
+from forgereader.core.models import Issue, ForgeUser, Project
+from forgereader.core.utils import update_forge_data
 
 
 forge_url = settings.FORGE_URL
@@ -14,9 +16,16 @@ class IssueListView(TemplateView):
     template_name = "core/issue_list.html"
 
     def get(self, request, *args, **kwargs):
-        # form = self.form_class(initial=self.initial)
+        filters = {}
+        project_name = request.GET.get('project')
+        if project_name:
+            project = Project.objects.filter(name=project_name).first()
+            filters['project'] = project
+
         user = ForgeUser.objects.filter(username='chand.chen').first()
-        issues = Issue.objects.filter(assignee=user)
+        filters['assignee'] = user
+        print(filters)
+        issues = Issue.objects.filter(**filters)
         paginator = Paginator(issues, 15)
 
         page = request.GET.get('page')
@@ -52,3 +61,31 @@ class ForgeUserListView(TemplateView):
 
 class ProjectListView(TemplateView):
     template_name = "core/project_list.html"
+
+    def get(self, request, *args, **kwargs):
+        msg = request.GET.get('msg', '')
+
+        projects = Project.objects.filter(namespace=settings.REPO_NAMESPACE)
+
+        paginator = Paginator(projects, 15)
+
+        page = request.GET.get('page')
+        try:
+            project_list = paginator.page(page)
+        except PageNotAnInteger:
+            project_list = paginator.page(1)
+        except EmptyPage:
+            project_list = paginator.page(paginator.num_pages)
+
+        contents = {
+            'msg': msg,
+            'projects': project_list,
+            'namespace': settings.REPO_NAMESPACE}
+        return render(request, self.template_name, contents)
+
+
+class SyncView(TemplateView):
+
+    def get(self, request, *args, **kwargs):
+        update_forge_data()
+        return HttpResponseRedirect('/?msg=ok')

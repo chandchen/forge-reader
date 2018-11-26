@@ -19,12 +19,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from forgereader.core.views import (
-    IssueListView, ForgeUserListView, ProjectListView)
+    IssueListView, ForgeUserListView, ProjectListView, SyncView)
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('issues/', IssueListView.as_view(), name='issue-list'),
     path('users/', ForgeUserListView.as_view(), name='user-list'),
-    path('projects/', ProjectListView.as_view(), name='project-list'),
+    path('', ProjectListView.as_view(), name='project-list'),
+    path('syncing/', SyncView.as_view(), name='syncing'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

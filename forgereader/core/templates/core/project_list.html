@@ -6,6 +6,16 @@
       <meta name="viewport" content="width=device-width,initial-scale=1.0">
       <title>Projects &bull; Dashboard</title>
       <link rel="stylesheet" type="text/css" href="{% static "core/css/bootstrap.min.css" %}">
+      <style type="text/css">
+            .container {
+                padding-left: 30px;
+                padding-right: 30px;
+                padding-top: 5px;
+            }
+            .container .pagination {
+                margin-top: 10px
+            }
+      </style>
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -32,25 +42,47 @@
                 <a class="nav-link" href="{% url 'user-list' %}">Members</a>
               </li>
             </ul>
-            <form class="form-inline my-2 my-lg-0">
-              <input class="form-control mr-sm-2" type="text" placeholder="Search">
-              <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+            <form class="form-inline my-2 my-lg-0" action="{% url 'syncing' %}" method="GET">
+              <button class="btn btn-secondary my-2 my-sm-0" type="submit">Sync</a></button>
             </form>
           </div>
         </nav>
-        <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-            channelfix / channelfix
-                <span class="badge badge-primary badge-pill">14</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-            channelfix / ios-app
-                <span class="badge badge-primary badge-pill">2</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-            channelfix / channelfix-android
-                <span class="badge badge-primary badge-pill">1</span>
-            </li>
-        </ul>
+
+        <div class="container">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                <li class="breadcrumb-item active">Projects</li>
+            </ol>
+
+            {% if msg == 'ok' %}
+            <div class="progress">
+              <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 100%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100">Up to date!</div>
+            </div>
+            {% endif %}
+
+            <ul class="list-group">
+                {% for project in projects %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="issues/?project={{ project.name }}">{{ namespace }} / {{ project.name }}</a>
+                    <span class="badge badge-primary badge-pill">{{ project.issue_count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="pagination alert alert-dismissible alert-secondary">
+                <span class="step-links">
+                    {% if projects.has_previous %}
+                        <a href="?page={{ projects.previous_page_number }}">previous</a>
+                    {% endif %}
+             
+                    <span class="current">
+                        Page {{ projects.number }} of {{ projects.paginator.num_pages }}.
+                    </span>
+             
+                    {% if projects.has_next %}
+                        <a href="?page={{ projects.next_page_number }}">next</a>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
     </body>
 </html>

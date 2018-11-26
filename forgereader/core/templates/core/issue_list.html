@@ -6,6 +6,16 @@
       <meta name="viewport" content="width=device-width,initial-scale=1.0">
       <title>Forge Issue</title>
       <link rel="stylesheet" type="text/css" href="{% static "core/css/bootstrap.min.css" %}">
+      <style type="text/css">
+            .container {
+                padding-left: 30px;
+                padding-right: 30px;
+                padding-top: 5px;
+            }
+            .container .pagination {
+                margin-top: 10px
+            }
+      </style>
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -17,10 +27,10 @@
           <div class="collapse navbar-collapse" id="navbarColor03">
             <ul class="navbar-nav mr-auto">
               <li class="nav-item">
-                <a class="nav-link" href="#">Project</a>
+                <a class="nav-link" href="{% url 'project-list' %}">Projects</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{% url 'issue-list' %}">Issue</a>
+                <a class="nav-link" href="{% url 'issue-list' %}">Issues</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#">Milestone</a>
@@ -32,35 +42,41 @@
                 <a class="nav-link" href="{% url 'user-list' %}">Members</a>
               </li>
             </ul>
-            <form class="form-inline my-2 my-lg-0">
-              <input class="form-control mr-sm-2" type="text" placeholder="Search">
-              <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+            <form class="form-inline my-2 my-lg-0" action="{% url 'syncing' %}" method="GET">
+              <button class="btn btn-secondary my-2 my-sm-0" type="submit">Sync</a></button>
             </form>
           </div>
         </nav>
 
-        <ul class="list-group">
+        <div class="container">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                <li class="breadcrumb-item active">Issues</li>
+            </ol>
 
-          {% for issue in issues %}
-          <li class="list-group-item d-flex align-items-center">
-              <strong>#{{ issue.number }}</strong>&nbsp;{{ issue.title |truncatechars:128 }}
-          </li>
-          {% endfor %}
-        </ul>
-        <div class="pagination alert alert-dismissible alert-secondary">
-            <span class="step-links">
-                {% if issues.has_previous %}
-                    <a href="?page={{ issues.previous_page_number }}">previous</a>
-                {% endif %}
-         
-                <span class="current">
-                    Page {{ issues.number }} of {{ issues.paginator.num_pages }}.
+            <ul class="list-group">
+
+              {% for issue in issues %}
+              <li class="list-group-item d-flex align-items-center">
+                  <strong>#{{ issue.number }}</strong>&nbsp;{{ issue.title |truncatechars:128 }}
+              </li>
+              {% endfor %}
+            </ul>
+            <div class="pagination alert alert-dismissible alert-secondary">
+                <span class="step-links">
+                    {% if issues.has_previous %}
+                        <a href="?page={{ issues.previous_page_number }}">previous</a>
+                    {% endif %}
+             
+                    <span class="current">
+                        Page {{ issues.number }} of {{ issues.paginator.num_pages }}.
+                    </span>
+             
+                    {% if issues.has_next %}
+                        <a href="?page={{ issues.next_page_number }}">next</a>
+                    {% endif %}
                 </span>
-         
-                {% if issues.has_next %}
-                    <a href="?page={{ issues.next_page_number }}">next</a>
-                {% endif %}
-            </span>
+            </div>
         </div>
     </body>
 </html>

@@ -34,6 +34,10 @@ class Project(models.Model):
     def repo_name(self):
         return '{}/{}'.format(self.namespace, self.name)
 
+    @property
+    def issue_count(self):
+        return self.issues.count()
+
 
 class Label(models.Model):
     name = models.CharField(max_length=30, unique=True)
