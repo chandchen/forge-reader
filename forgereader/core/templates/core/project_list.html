@@ -8,12 +8,17 @@
       <link rel="stylesheet" type="text/css" href="{% static "core/css/bootstrap.min.css" %}">
       <style type="text/css">
             .container {
-                padding-left: 30px;
-                padding-right: 30px;
-                padding-top: 5px;
+                padding-top: 75px;
             }
             .container .pagination {
                 margin-top: 10px
+            }
+
+            .navbar {
+                position: fixed;
+                top: 0;
+                z-index: 1;
+                width: 100%;
             }
       </style>
     </head>
@@ -49,11 +54,6 @@
         </nav>
 
         <div class="container">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
-                <li class="breadcrumb-item active">Projects</li>
-            </ol>
-
             {% if msg == 'ok' %}
             <div class="progress">
               <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 100%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100">Up to date!</div>

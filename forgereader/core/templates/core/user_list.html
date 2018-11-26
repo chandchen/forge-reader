@@ -4,16 +4,21 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1.0">
-      <title>Forge Issue</title>
+      <title>Members &bull; Dashboard</title>
       <link rel="stylesheet" type="text/css" href="{% static "core/css/bootstrap.min.css" %}">
       <style type="text/css">
             .container {
-                padding-left: 30px;
-                padding-right: 30px;
-                padding-top: 5px;
+                padding-top: 75px;
             }
             .container .pagination {
                 margin-top: 10px
+            }
+
+            .navbar {
+                position: fixed;
+                top: 0;
+                z-index: 1;
+                width: 100%;
             }
       </style>
     </head>
@@ -49,11 +54,6 @@
         </nav>
 
         <div class="container">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
-                <li class="breadcrumb-item active">Members</li>
-            </ol>
-
             <ul class="list-group">
 
               {% for user in users %}
