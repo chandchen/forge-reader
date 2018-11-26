@@ -51,14 +51,42 @@
         <div class="container">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
-                <li class="breadcrumb-item active">Issues</li>
+                <li class="breadcrumb-item active">Issues {% if project %}({{ project }}){% endif %}</li>
             </ol>
-
+        <form>
+            <div class="row">
+            <div class="col-lg-4">
+                <div class="form-group">
+                    <label for="exampleSelect1">Member select</label>
+                    <select class="form-control" id="exampleSelect1">
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="form-group">
+                    <label for="exampleSelect1">Time select</label>
+                    <select class="form-control" id="exampleSelect1">
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                    </select>
+                </div>
+            </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
             <ul class="list-group">
 
               {% for issue in issues %}
               <li class="list-group-item d-flex align-items-center">
-                  <strong>#{{ issue.number }}</strong>&nbsp;{{ issue.title |truncatechars:128 }}
+                  <strong>#{{ issue.number }}</strong>&nbsp;{{ issue.title |truncatechars:80 }}
               </li>
               {% endfor %}
             </ul>

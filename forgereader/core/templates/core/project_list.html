@@ -63,7 +63,7 @@
             <ul class="list-group">
                 {% for project in projects %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                <a href="issues/?project={{ project.name }}">{{ namespace }} / {{ project.name }}</a>
+                <a href="issues/?project={{ project.pk }}">{{ namespace }} / {{ project.name }}</a>
                     <span class="badge badge-primary badge-pill">{{ project.issue_count }}</span>
                 </li>
                 {% endfor %}

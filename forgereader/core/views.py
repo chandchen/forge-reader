@@ -17,14 +17,16 @@ class IssueListView(TemplateView):
 
     def get(self, request, *args, **kwargs):
         filters = {}
-        project_name = request.GET.get('project')
-        if project_name:
-            project = Project.objects.filter(name=project_name).first()
+        project_pk = request.GET.get('project', '')
+        project_name = 'all'
+        if project_pk:
+            project = Project.objects.get(pk=project_pk)
             filters['project'] = project
+            project_name = project.name
 
-        user = ForgeUser.objects.filter(username='chand.chen').first()
-        filters['assignee'] = user
-        print(filters)
+        # user = ForgeUser.objects.filter(username='chand.chen').first()
+        # filters['assignee'] = user
+
         issues = Issue.objects.filter(**filters)
         paginator = Paginator(issues, 15)
 
@@ -37,7 +39,9 @@ class IssueListView(TemplateView):
             issue_list = paginator.page(paginator.num_pages)
         return render(request, self.template_name, {
             'issues': issue_list,
-            'forge_url': forge_url})
+            'forge_url': forge_url,
+            'project': project_name
+        })
 
 
 class ForgeUserListView(TemplateView):
