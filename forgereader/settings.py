@@ -130,6 +130,8 @@ DEFAULT_REPO = ''
 REPO_NAMESPACE = ''
 REPO_NAME = []
 
+DEVELOPERS = []
+
 try:
     from .local_settings import *
 except ImportError:

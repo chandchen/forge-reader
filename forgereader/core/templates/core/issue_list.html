@@ -20,6 +20,9 @@
             .table-container {
                 padding-top: 16px;
             }
+            .search-form {
+                padding-bottom: 16px;
+            }
       </style>
     </head>
     <body>
@@ -54,16 +57,15 @@
         </nav>
 
         <div class="container">
-            <form action="">
+            <form class="search-form" action="">
                 <div class="row">
                 <div class="col-lg-3">
                     <div class="form-group">
                         <select class="form-control" id="exampleSelect1" name="project">
-                            <option value="1">Web
+                            {% for project in projects %}
+                            <option value="{{ project.pk }}" {% if project.pk == project_selected_id %} selected {% endif %} >{{ project.name }}
 </option>
-                            <option value="2">IOS
-</option>
-                            <option value="3">Android</option>
+                            {% endfor %}
                         </select>
                     </div>
                 </div>
@@ -71,7 +73,7 @@
                     <div class="form-group">
                         <select class="form-control" id="exampleSelect1" name="assignee">
                             {% for user in users %}
-                            <option value="{{ user }}">{{ user }}</option>
+                            <option value="{{ user.pk }}" {% if user.pk == assignee_selected_id %} selected {% endif %} >{{ user.username }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -89,6 +91,32 @@
                 </div>
                 <button type="submit" class="btn btn-secondary">Search</button>
             </form>
+
+            {% if show_statistics %}
+            <div class="card border-secondary mb-3">
+                <table class="table table-hover">
+                    <thead>
+                      <tr>
+                          <th scope="col">Name</th>
+                          <th scope="col">Total Issues</th>
+                          <th scope="col">Total Time</th>
+                          <th scope="col">Average Time</th>
+                          <th scope="col">Reopen Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">{{ infos.assignee_name }}</th>
+                            <td>{{ infos.issue_count }}</td>
+                            <td>Column content</td>
+                            <td>Column content</td>
+                            <td>Column content</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
             <div class="table-container">
                 <table class="table table-hover">
                     <thead>
@@ -97,6 +125,7 @@
                           <th scope="col">Issue Title</th>
                           <th scope="col">Started</th>
                           <th scope="col">Finished</th>
+                          <th scope="col">Time Spent</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -104,6 +133,7 @@
                         <tr>
                             <th scope="row">{{ issue.number }}</th>
                             <td title="{{ issue.title }}">{{ issue.title |truncatechars:40 }}</td>
+                            <td>Column content</td>
                             <td>Column content</td>
                             <td>Column content</td>
                         </tr>
@@ -114,7 +144,7 @@
             <div class="pagination alert alert-dismissible alert-secondary">
                 <span class="step-links">
                     {% if issues.has_previous %}
-                        <a href="?page={{ issues.previous_page_number }}">previous</a>
+                        <a href="?project={{ project_selected_id }}&assignee={{ assignee_selected_id }}&time={{ time }}&page={{ issues.previous_page_number }}">previous</a>
                     {% endif %}
              
                     <span class="current">
@@ -122,7 +152,7 @@
                     </span>
              
                     {% if issues.has_next %}
-                        <a href="?page={{ issues.next_page_number }}">next</a>
+                        <a href="?project={{ project_selected_id }}&assignee={{ assignee_selected_id }}&time={{ time }}&page={{ issues.next_page_number }}">next</a>
                     {% endif %}
                 </span>
             </div>

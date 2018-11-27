@@ -17,26 +17,28 @@ class IssueListView(TemplateView):
 
     def get(self, request, *args, **kwargs):
         filters = {}
-        project_pk = request.GET.get('project', '')
-        assignee = request.GET.get('assignee', '')
-        # time = request.GET.get('time', '')
-        project_name = 'all'
-        if project_pk:
-            project = Project.objects.get(pk=project_pk)
-            filters['project'] = project
-            project_name = project.name
+        show_statistics = False
 
-        assignee_selected = ''
-        if assignee:
-            assignee = ForgeUser.objects.filter(username=assignee).first()
-            filters['assignee'] = assignee
-            assignee_selected = assignee.username
-
-        user_options = ForgeUser.objects.filter(
-            pk__in=list(range(1, 10))).values_list('username', flat=True)
-        # filters['assignee'] = user
+        project_selected_id = request.GET.get('project', 0)
+        if project_selected_id != 0:
+            filters['project_id'] = project_selected_id
+        assignee_selected_id = request.GET.get('assignee', 0)
+        assignee_name = ''
+        if assignee_selected_id != 0:
+            filters['assignee_id'] = assignee_selected_id
+            assignee_name = ForgeUser.objects.get(
+                pk=assignee_selected_id).full_name
+            show_statistics = True
+        time = request.GET.get('time', '')
 
         issues = Issue.objects.filter(**filters)
+        issue_count = issues.count()
+
+        project_options = Project.objects.filter(
+            name__in=settings.REPO_NAME).order_by('name')
+        user_options = ForgeUser.objects.filter(
+            username__in=settings.DEVELOPERS).order_by('username')
+
         paginator = Paginator(issues, 20)
 
         page = request.GET.get('page')
@@ -46,13 +48,25 @@ class IssueListView(TemplateView):
             issue_list = paginator.page(1)
         except EmptyPage:
             issue_list = paginator.page(paginator.num_pages)
-        return render(request, self.template_name, {
-            'issues': issue_list,
+
+        # fetch statistics info here
+        infos = {
+            'assignee_name': assignee_name,
+            'issue_count': issue_count,
+        }
+
+        contents = {
             'forge_url': forge_url,
-            'project': project_name,
+            'issues': issue_list,
+            'project_selected_id': int(project_selected_id),
+            'assignee_selected_id': int(assignee_selected_id),
+            'time': time,
             'users': user_options,
-            'assignee_selected': assignee_selected,
-        })
+            'projects': project_options,
+            'infos': infos,
+            'show_statistics': show_statistics,
+        }
+        return render(request, self.template_name, contents)
 
 
 class ForgeUserListView(TemplateView):

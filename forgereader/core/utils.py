@@ -165,7 +165,7 @@ def update_issue_data(project=None):
         bottom = soup0.findAll(
             'li', class_="js-pagination-page")[-1].get_text().replace('\n', '')
     except Exception as e:
-        bottom = 2
+        bottom = 1
     for i in range(1, int(bottom) + 1):
         url = settings.FORGE_URL + '/{}/issues?page={}&scope=all&\
             state=all'.format(project.repo_name, i)
@@ -222,7 +222,7 @@ def update_label_data(project):
         bottom = soup0.findAll(
             'li', class_="js-pagination-page")[-1].get_text().replace('\n', '')
     except Exception as e:
-        bottom = 2
+        bottom = 1
     for i in range(1, int(bottom) + 1):
         repo_url = settings.FORGE_URL + '/{}/labels?page={}'.format(
             project.repo_name, i)
@@ -268,12 +268,11 @@ def update_forgeuser_data():
         bottom = soup0.findAll(
             'li', class_="js-pagination-page")[-1].get_text().replace('\n', '')
     except Exception as e:
-        bottom = 2
+        bottom = 1
     for i in range(1, int(bottom) + 1):
         repo_url = settings.FORGE_URL + '/{}/project_members?page\
             ={}'.format(settings.DEFAULT_REPO, i)
         url = repo_url.replace(' ', '')
-        print(url)
         html = sessions.get(url, headers=headers).text
         soup = BeautifulSoup(html, features="html.parser")
 
@@ -311,7 +310,7 @@ def update_project_data():
         bottom = soup0.findAll(
             'li', class_="js-pagination-page")[-1].get_text().replace('\n', '')
     except Exception as e:
-        bottom = 2
+        bottom = 1
     for i in range(1, int(bottom) + 1):
         repo_url = settings.FORGE_URL + '/?non_archived=true&page={}&sort=\
             latest_activity_desc'.format(i)
@@ -347,8 +346,8 @@ def update_forge_data():
     cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
     cs.login()
 
-    update_project_data()
-    update_forgeuser_data()
+    # update_project_data()
+    # update_forgeuser_data()
 
     projects = Project.objects.filter(
         namespace=settings.REPO_NAMESPACE,
