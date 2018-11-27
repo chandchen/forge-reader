@@ -5,6 +5,11 @@ from django.conf import settings
 
 from bs4 import BeautifulSoup
 
+from selenium import webdriver
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+
 from forgereader.core.models import (
     ForgeUser, Milestone, Label, Issue, Project)
 
@@ -49,15 +54,17 @@ def fetch_issue_detail(project, issue):
     html = sessions.get(url, headers=headers).text
     soup = BeautifulSoup(html, features="html.parser")
 
-    extra_info = {}
     try:
         milestone = soup.find(
             'div', class_="milestone").find('div', class_="value").find(
             'a', class_="bold").get_text().replace('\n', '')
     except Exception as e:
         milestone = ''
-    extra_info['milestone'] = milestone
-    return extra_info
+    timeline = update_timeline_data(url)
+    return {
+        'milestone': milestone,
+        'timeline': timeline,
+    }
 
 
 def fetch_issue_list(project, url):
@@ -358,3 +365,60 @@ def update_forge_data():
             update_milestone_data(project=project)
             update_issue_data(project=project)
     print('Greeting, All data up to date!')
+
+
+def webdriver_login(driver, account, passwd):
+    driver.find_element_by_id('user_login').send_keys(account)
+    driver.find_element_by_id('user_password').send_keys(passwd)
+    driver.find_element_by_class_name('btn-save').click()
+
+    title = driver.find_element_by_class_name('shortcuts-activity').text
+    try:
+        assert title == 'Your projects'
+        print('Login Success!')
+    except AssertionError as e:
+        print('Login Failed!')
+    return driver
+
+
+def fetch_timeline_info(driver, url):
+    driver.get(url)
+    driver.implicitly_wait(10)
+
+    WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((
+            By.XPATH, '//*[@id="notes-list"]')))
+
+    ul = driver.find_element_by_id('notes-list')
+    contents = ul.find_elements_by_xpath('li')
+    for content in contents:
+        try:
+            username = content.find_element_by_class_name(
+                'note-headline-light').text
+            print(username)
+        except Exception as e:
+            pass
+
+        try:
+            action = content.find_element_by_class_name(
+                'system-note-message').find_element_by_xpath('span').text
+            print(action)
+        except Exception as e:
+            pass
+
+        try:
+            time = content.find_element_by_tag_name(
+                'time').get_attribute('data-original-title')
+            print(time)
+        except Exception as e:
+            pass
+
+
+def update_timeline_data(url):
+    driver = webdriver.Chrome()
+    driver.get(settings.FORGE_URL)
+    driver.maximize_window()
+    driver = webdriver_login(
+        driver, settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    fetch_timeline_info(driver, url)
+    driver.quit()
