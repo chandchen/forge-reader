@@ -7,7 +7,7 @@ ISSUE_STATUS_CHOICES = (
 )
 
 
-class ForgeUser(models.Model):
+class User(models.Model):
     username = models.CharField(max_length=30, unique=True)
     full_name = models.CharField(max_length=150, blank=True)
     when = models.DateTimeField(auto_now_add=True)
@@ -71,10 +71,10 @@ class Milestone(models.Model):
 class Issue(models.Model):
     title = models.CharField(max_length=256)
     author = models.ForeignKey(
-        ForgeUser, on_delete=models.CASCADE,
+        User, on_delete=models.CASCADE,
         related_name='created_issues')
     assignee = models.ForeignKey(
-        ForgeUser, on_delete=models.CASCADE, null=True, blank=True,
+        User, on_delete=models.CASCADE, null=True, blank=True,
         related_name='assigned_issues')
     number = models.IntegerField(default=0)
     milestone = models.ForeignKey(
@@ -105,7 +105,7 @@ class Action(models.Model):
         Issue, on_delete=models.CASCADE,
         related_name='actions')
     owner = models.ForeignKey(
-        ForgeUser, on_delete=models.CASCADE,
+        User, on_delete=models.CASCADE,
         related_name='actions')
     created = models.DateTimeField(null=True, blank=True)
     action = models.CharField(max_length=256)

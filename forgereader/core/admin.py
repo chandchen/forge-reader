@@ -1,11 +1,11 @@
 from django.contrib import admin
 
 from forgereader.core.models import (
-    ForgeUser, Label, Milestone, Issue, Project, Action)
+    User, Label, Milestone, Issue, Project, Action)
 
 
-class ForgeUserAdmin(admin.ModelAdmin):
-    model = ForgeUser
+class UserAdmin(admin.ModelAdmin):
+    model = User
     list_display = ('username', 'full_name', 'when')
     search_fields = ('username', 'full_name')
 
@@ -40,7 +40,7 @@ class ActionAdmin(admin.ModelAdmin):
     raw_id_fields = ('issue', 'owner')
 
 
-admin.site.register(ForgeUser, ForgeUserAdmin)
+admin.site.register(User, UserAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(Label, LabelAdmin)
 admin.site.register(Milestone, MilestoneAdmin)

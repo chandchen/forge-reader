@@ -12,14 +12,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
 from forgereader.core.models import (
-    ForgeUser, Milestone, Label, Issue, Project, Action)
+    User, Milestone, Label, Issue, Project, Action)
 
 
 headers = {
     'User-Agent': "Mozilla/5.0 (Windows NT 6.1; Win64; x64) \
                   AppleWebKit/537.36 (KHTML, like Gecko) \
                   Chrome/59.0.3071.115 Safari/537.36",
-    'Referer': settings.FORGE_URL
+    'Referer': settings.SITE_URL
 }
 
 sessions = requests.Session()
@@ -30,7 +30,7 @@ class Authentication:
     def __init__(self, email, password):
         self.email = email
         self.password = password
-        self.login_url = settings.FORGE_URL + '/users/sign_in'
+        self.login_url = settings.SITE_URL + '/users/sign_in'
 
     def login(self):
         html = sessions.get(self.login_url, headers=headers).text
@@ -48,85 +48,8 @@ class Authentication:
             print('Login Failed!')
 
 
-def webdriver_login(driver, account, passwd):
-    driver.find_element_by_id('user_login').send_keys(account)
-    driver.find_element_by_id('user_password').send_keys(passwd)
-    driver.find_element_by_class_name('btn-save').click()
-
-    title = driver.find_element_by_class_name('shortcuts-activity').text
-    try:
-        assert title == 'Your projects'
-        print('Login Success!')
-    except AssertionError as e:
-        print('Login Failed!')
-    return driver
-
-
-def fetch_timeline_info(driver, issue):
-    url = settings.FORGE_URL + '/{}/issues/{}'.format(
-        issue.project.repo_name, issue.number)
-    driver.get(url)
-    driver.implicitly_wait(100)
-
-    WebDriverWait(driver, 100).until(
-        EC.presence_of_element_located((
-            By.XPATH, '//*[@id="notes-list"]')))
-
-    ul = driver.find_element_by_id('notes-list')
-    contents = ul.find_elements_by_xpath('li')
-    for content in contents:
-        try:
-            username = content.find_element_by_class_name(
-                'note-headline-light').text.replace('@', '')
-        except Exception as e:
-            username = ''
-
-        try:
-            action = content.find_element_by_class_name(
-                'system-note-message').find_element_by_xpath('span').text
-        except Exception as e:
-            action = ''
-
-        try:
-            original_time = content.find_element_by_tag_name(
-                'time').get_attribute('data-original-title')
-            format_time = timezone.datetime.strptime(
-                original_time, '%b %d, %Y %I:%M%p %Z+0000')
-        except Exception as e:
-            format_time = None
-
-        if username:
-            owner = ForgeUser.objects.filter(username=username).first()
-            if owner:
-                Action.objects.update_or_create(
-                    issue=issue,
-                    owner=owner,
-                    created=format_time,
-                    defaults={
-                        'issue': issue,
-                        'owner': owner,
-                        'created': format_time,
-                        'action': action
-                    }
-                )
-            print('Updated Success!')
-        print('Update Failed!')
-
-
-def update_timeline_data():
-    driver = webdriver.Chrome()
-    driver.get(settings.FORGE_URL)
-    driver.maximize_window()
-    driver = webdriver_login(
-        driver, settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
-    issues = Issue.objects.filter(status=Issue.CLOSED)
-    for issue in issues:
-        fetch_timeline_info(driver, issue)
-    driver.quit()
-
-
 def fetch_issue_detail(project, issue):
-    repo_url = settings.FORGE_URL + '/{}/issues/{}'.format(
+    repo_url = settings.SITE_URL + '/{}/issues/{}'.format(
         project.repo_name, issue)
     url = repo_url.replace(' ', '')
     html = sessions.get(url, headers=headers).text
@@ -169,7 +92,7 @@ def fetch_issue_list(project, url):
             author = ''
 
         if author:
-            author = ForgeUser.objects.filter(full_name=author).first()
+            author = User.objects.filter(full_name=author).first()
         else:
             author = None
 
@@ -182,7 +105,7 @@ def fetch_issue_list(project, url):
             assignee = ''
 
         if assignee:
-            assignee = ForgeUser.objects.filter(full_name=assignee).first()
+            assignee = User.objects.filter(full_name=assignee).first()
         else:
             assignee = None
 
@@ -235,12 +158,12 @@ def fetch_issue_list(project, url):
 
 
 def update_issue_data(project=None):
-    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs = Authentication(settings.USERNAME, settings.PASSWORD)
     # cs.login()
 
     # project = Project.objects.filter(
     #     name='channelfix', namespace='channelfix').first()
-    index_url = settings.FORGE_URL + '/{}/issues?scope=all&utf8=✓&\
+    index_url = settings.SITE_URL + '/{}/issues?scope=all&utf8=✓&\
         state=all'.format(project.repo_name)
     html0 = sessions.get(index_url, headers=headers).text
     soup0 = BeautifulSoup(html0, features="html.parser")
@@ -251,16 +174,16 @@ def update_issue_data(project=None):
     except Exception as e:
         bottom = 1
     for i in range(1, int(bottom) + 1):
-        url = settings.FORGE_URL + '/{}/issues?page={}&scope=all&\
+        url = settings.SITE_URL + '/{}/issues?page={}&scope=all&\
             state=all'.format(project.repo_name, i)
         fetch_issue_list(project, url)
 
 
 def update_milestone_data(project):
-    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs = Authentication(settings.USERNAME, settings.PASSWORD)
     # cs.login()
 
-    repo_url = settings.FORGE_URL + '/{}/milestones\
+    repo_url = settings.SITE_URL + '/{}/milestones\
         ?sort=due_date_desc&state=all'.format(project.repo_name)
     url = repo_url.replace(' ', '')
     html = sessions.get(url, headers=headers).text
@@ -296,10 +219,10 @@ def update_milestone_data(project):
 
 
 def update_label_data(project):
-    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs = Authentication(settings.USERNAME, settings.PASSWORD)
     # cs.login()
 
-    index_url = settings.FORGE_URL + '/{}/labels'.format(project.repo_name)
+    index_url = settings.SITE_URL + '/{}/labels'.format(project.repo_name)
     html0 = sessions.get(index_url, headers=headers).text
     soup0 = BeautifulSoup(html0, features="html.parser")
     try:
@@ -308,7 +231,7 @@ def update_label_data(project):
     except Exception as e:
         bottom = 1
     for i in range(1, int(bottom) + 1):
-        repo_url = settings.FORGE_URL + '/{}/labels?page={}'.format(
+        repo_url = settings.SITE_URL + '/{}/labels?page={}'.format(
             project.repo_name, i)
         url = repo_url.replace(' ', '')
         html = sessions.get(url, headers=headers).text
@@ -341,10 +264,10 @@ def update_label_data(project):
 
 
 def update_forgeuser_data():
-    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs = Authentication(settings.USERNAME, settings.PASSWORD)
     # cs.login()
 
-    index_url = settings.FORGE_URL + '/{}/project_members?'.format(
+    index_url = settings.SITE_URL + '/{}/project_members?'.format(
         settings.DEFAULT_REPO)
     html0 = sessions.get(index_url, headers=headers).text
     soup0 = BeautifulSoup(html0, features="html.parser")
@@ -354,7 +277,7 @@ def update_forgeuser_data():
     except Exception as e:
         bottom = 1
     for i in range(1, int(bottom) + 1):
-        repo_url = settings.FORGE_URL + '/{}/project_members?page\
+        repo_url = settings.SITE_URL + '/{}/project_members?page\
             ={}'.format(settings.DEFAULT_REPO, i)
         url = repo_url.replace(' ', '')
         html = sessions.get(url, headers=headers).text
@@ -377,7 +300,7 @@ def update_forgeuser_data():
             except Exception as e:
                 full_name = ''
             if username:
-                ForgeUser.objects.update_or_create(
+                User.objects.update_or_create(
                     username=username, defaults={
                         'username': username,
                         'full_name': full_name
@@ -385,10 +308,10 @@ def update_forgeuser_data():
 
 
 def update_project_data():
-    # cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    # cs = Authentication(settings.USERNAME, settings.PASSWORD)
     # cs.login()
 
-    html0 = sessions.get(settings.FORGE_URL, headers=headers).text
+    html0 = sessions.get(settings.SITE_URL, headers=headers).text
     soup0 = BeautifulSoup(html0, features="html.parser")
     try:
         bottom = soup0.findAll(
@@ -396,7 +319,7 @@ def update_project_data():
     except Exception as e:
         bottom = 1
     for i in range(1, int(bottom) + 1):
-        repo_url = settings.FORGE_URL + '/?non_archived=true&page={}&sort=\
+        repo_url = settings.SITE_URL + '/?non_archived=true&page={}&sort=\
             latest_activity_desc'.format(i)
         url = repo_url.replace(' ', '')
         html = sessions.get(url, headers=headers).text
@@ -427,7 +350,7 @@ def update_project_data():
 
 
 def update_forge_data():
-    cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    cs = Authentication(settings.USERNAME, settings.PASSWORD)
     cs.login()
 
     update_project_data()
@@ -440,5 +363,134 @@ def update_forge_data():
         for project in projects:
             update_label_data(project=project)
             update_milestone_data(project=project)
-            update_issue_data(project=project)
+            # update_issue_data(project=project)
     print('Greeting, All data up to date!')
+
+
+def webdriver_login(driver, account, passwd):
+    driver.find_element_by_id('user_login').send_keys(account)
+    driver.find_element_by_id('user_password').send_keys(passwd)
+    driver.find_element_by_class_name('btn-save').click()
+
+    title = driver.find_element_by_class_name('shortcuts-activity').text
+    try:
+        assert title == 'Your projects'
+        print('Login Success!')
+    except AssertionError as e:
+        print('Login Failed!')
+    return driver
+
+
+def fetch_timeline_info(driver, issue):
+    url = settings.SITE_URL + '/{}/issues/{}'.format(
+        issue.project.repo_name, issue.number)
+    driver.get(url)
+    driver.implicitly_wait(100)
+    WebDriverWait(driver, 100).until(
+        EC.presence_of_element_located((
+            By.XPATH, '//*[@id="notes-list"]')))
+
+    ul = driver.find_element_by_id('notes-list')
+    contents = ul.find_elements_by_xpath('li')
+    for content in contents:
+        try:
+            username = content.find_element_by_class_name(
+                'note-headline-light').text.replace('@', '')
+        except Exception as e:
+            username = ''
+
+        try:
+            action = content.find_element_by_class_name(
+                'system-note-message').find_element_by_xpath('span').text
+        except Exception as e:
+            action = ''
+
+        try:
+            original_time = content.find_element_by_tag_name(
+                'time').get_attribute('data-original-title')
+            format_time = timezone.datetime.strptime(
+                original_time, '%b %d, %Y %I:%M%p %Z+0000')
+        except Exception as e:
+            format_time = None
+        if username:
+            owner = User.objects.filter(username=username).first()
+            if owner:
+                Action.objects.update_or_create(
+                    issue=issue,
+                    owner=owner,
+                    created=format_time,
+                    defaults={
+                        'issue': issue,
+                        'owner': owner,
+                        'created': format_time,
+                        'action': action
+                    }
+                )
+            print('Updated Success!')
+        print('Update Failed!')
+
+
+def fetch_issue_detail_info(driver, issue_url):
+    driver.get(issue_url)
+    driver.implicitly_wait(10)
+
+    # WebDriverWait(driver, 100).until(
+    #     EC.presence_of_element_located((
+    #         By.XPATH, '//*[@id="notes-list"]')))
+    headers = driver.find_element_by_class_name('detail-page-header-body')
+    status1 = headers.find_element_by_class_name(
+        'status-box-issue-closed').text
+    status2 = headers.find_element_by_class_name(
+        'status-box-open').text
+    status = status1 if status1 else status2
+
+    created = headers.find_element_by_tag_name(
+        'time').get_attribute('data-original-title')
+
+    author = headers.find_element_by_class_name('author').text
+
+    title = driver.find_element_by_class_name(
+        'detail-page-description').find_element_by_class_name(
+        'title-container').text
+
+    sidebar = driver.find_element_by_class_name('issuable-context-form')
+    assignee = sidebar.find_element_by_class_name(
+        'username').text.replace('@', '')
+
+    milestone = sidebar.find_element_by_class_name(
+        'milestone').text.strip().replace("\n", "").replace("\t", "").replace(
+        "\r", "").replace('Milestone', '').replace('Edit', '')
+
+    labels = sidebar.find_element_by_class_name(
+        'issuable-show-labels').find_elements_by_tag_name('span')
+    label_list = []
+    for label in labels:
+        label_list.append(label.text)
+    contents = {
+        'status': status,
+        'created': created,
+        'author': author,
+        'title': title,
+        'assignee': assignee,
+        'milestone': milestone,
+        'labels': label_list
+    }
+    return contents
+
+
+def update_issue_infos(project):
+    driver = webdriver.Chrome()
+    driver.get(settings.SITE_URL)
+    driver.maximize_window()
+    driver = webdriver_login(
+        driver, settings.USERNAME, settings.PASSWORD)
+    url = settings.SITE_URL + '/{}/issues'.format(project.repo_name)
+    driver.get(url)
+    driver.implicitly_wait(10)
+    issue_count = driver.find_element_by_id(
+        'state-all').find_element_by_class_name('badge').text.replace(',', '')
+
+    for issue in int(issue_count) + 1:
+        issue_url = '{}/{}'.format(url, issue)
+        fetch_issue_detail_info(driver, issue_url)
+    driver.quit()

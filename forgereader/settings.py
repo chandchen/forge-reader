@@ -120,10 +120,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-FORGE_URL = 'https://gitlab.com'
+SITE_URL = 'https://gitlab.com'
 
-FORGE_USERNAME = 'username'
-FORGE_PASSWORD = 'password'
+USERNAME = 'username'
+PASSWORD = 'password'
 
 DEFAULT_REPO = ''
 

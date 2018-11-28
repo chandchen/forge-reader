@@ -5,11 +5,11 @@ from django.http import HttpResponseRedirect
 
 from django.conf import settings
 
-from forgereader.core.models import Issue, ForgeUser, Project
+from forgereader.core.models import Issue, User, Project
 from forgereader.core.utils import update_forge_data
 
 
-forge_url = settings.FORGE_URL
+forge_url = settings.SITE_URL
 
 
 class IssueListView(TemplateView):
@@ -26,7 +26,7 @@ class IssueListView(TemplateView):
         assignee_name = ''
         if assignee_selected_id != 0:
             filters['assignee_id'] = assignee_selected_id
-            assignee_name = ForgeUser.objects.get(
+            assignee_name = User.objects.get(
                 pk=assignee_selected_id).full_name
             show_statistics = True
         time = request.GET.get('time', '')
@@ -36,7 +36,7 @@ class IssueListView(TemplateView):
 
         project_options = Project.objects.filter(
             name__in=settings.REPO_NAME).order_by('name')
-        user_options = ForgeUser.objects.filter(
+        user_options = User.objects.filter(
             username__in=settings.DEVELOPERS).order_by('username')
 
         paginator = Paginator(issues, 20)
@@ -69,11 +69,11 @@ class IssueListView(TemplateView):
         return render(request, self.template_name, contents)
 
 
-class ForgeUserListView(TemplateView):
+class UserListView(TemplateView):
     template_name = "core/user_list.html"
 
     def get(self, request, *args, **kwargs):
-        users = ForgeUser.objects.all()
+        users = User.objects.all()
         paginator = Paginator(users, 15)
 
         page = request.GET.get('page')
