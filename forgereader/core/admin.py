@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from forgereader.core.models import (
-    ForgeUser, Label, Milestone, Issue, Project)
+    ForgeUser, Label, Milestone, Issue, Project, Action)
 
 
 class ForgeUserAdmin(admin.ModelAdmin):
@@ -34,8 +34,15 @@ class IssueAdmin(admin.ModelAdmin):
     raw_id_fields = ('author', 'assignee', 'milestone')
 
 
+class ActionAdmin(admin.ModelAdmin):
+    model = Issue
+    list_display = ('action', 'created', 'when')
+    raw_id_fields = ('issue', 'owner')
+
+
 admin.site.register(ForgeUser, ForgeUserAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(Label, LabelAdmin)
 admin.site.register(Milestone, MilestoneAdmin)
 admin.site.register(Issue, IssueAdmin)
+admin.site.register(Action, ActionAdmin)

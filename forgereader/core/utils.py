@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import requests
+from django.utils import timezone
 
 from django.conf import settings
 
@@ -11,7 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
 from forgereader.core.models import (
-    ForgeUser, Milestone, Label, Issue, Project)
+    ForgeUser, Milestone, Label, Issue, Project, Action)
 
 
 headers = {
@@ -47,6 +48,83 @@ class Authentication:
             print('Login Failed!')
 
 
+def webdriver_login(driver, account, passwd):
+    driver.find_element_by_id('user_login').send_keys(account)
+    driver.find_element_by_id('user_password').send_keys(passwd)
+    driver.find_element_by_class_name('btn-save').click()
+
+    title = driver.find_element_by_class_name('shortcuts-activity').text
+    try:
+        assert title == 'Your projects'
+        print('Login Success!')
+    except AssertionError as e:
+        print('Login Failed!')
+    return driver
+
+
+def fetch_timeline_info(driver, issue):
+    url = settings.FORGE_URL + '/{}/issues/{}'.format(
+        issue.project.repo_name, issue.number)
+    driver.get(url)
+    driver.implicitly_wait(100)
+
+    WebDriverWait(driver, 100).until(
+        EC.presence_of_element_located((
+            By.XPATH, '//*[@id="notes-list"]')))
+
+    ul = driver.find_element_by_id('notes-list')
+    contents = ul.find_elements_by_xpath('li')
+    for content in contents:
+        try:
+            username = content.find_element_by_class_name(
+                'note-headline-light').text.replace('@', '')
+        except Exception as e:
+            username = ''
+
+        try:
+            action = content.find_element_by_class_name(
+                'system-note-message').find_element_by_xpath('span').text
+        except Exception as e:
+            action = ''
+
+        try:
+            original_time = content.find_element_by_tag_name(
+                'time').get_attribute('data-original-title')
+            format_time = timezone.datetime.strptime(
+                original_time, '%b %d, %Y %I:%M%p %Z+0000')
+        except Exception as e:
+            format_time = None
+
+        if username:
+            owner = ForgeUser.objects.filter(username=username).first()
+            if owner:
+                Action.objects.update_or_create(
+                    issue=issue,
+                    owner=owner,
+                    created=format_time,
+                    defaults={
+                        'issue': issue,
+                        'owner': owner,
+                        'created': format_time,
+                        'action': action
+                    }
+                )
+            print('Updated Success!')
+        print('Update Failed!')
+
+
+def update_timeline_data():
+    driver = webdriver.Chrome()
+    driver.get(settings.FORGE_URL)
+    driver.maximize_window()
+    driver = webdriver_login(
+        driver, settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
+    issues = Issue.objects.filter(status=Issue.CLOSED)
+    for issue in issues:
+        fetch_timeline_info(driver, issue)
+    driver.quit()
+
+
 def fetch_issue_detail(project, issue):
     repo_url = settings.FORGE_URL + '/{}/issues/{}'.format(
         project.repo_name, issue)
@@ -60,10 +138,8 @@ def fetch_issue_detail(project, issue):
             'a', class_="bold").get_text().replace('\n', '')
     except Exception as e:
         milestone = ''
-    timeline = update_timeline_data(url)
     return {
         'milestone': milestone,
-        'timeline': timeline,
     }
 
 
@@ -168,6 +244,7 @@ def update_issue_data(project=None):
         state=all'.format(project.repo_name)
     html0 = sessions.get(index_url, headers=headers).text
     soup0 = BeautifulSoup(html0, features="html.parser")
+    # WARNING: Wrong pagination here
     try:
         bottom = soup0.findAll(
             'li', class_="js-pagination-page")[-1].get_text().replace('\n', '')
@@ -353,8 +430,8 @@ def update_forge_data():
     cs = Authentication(settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
     cs.login()
 
-    # update_project_data()
-    # update_forgeuser_data()
+    update_project_data()
+    update_forgeuser_data()
 
     projects = Project.objects.filter(
         namespace=settings.REPO_NAMESPACE,
@@ -365,60 +442,3 @@ def update_forge_data():
             update_milestone_data(project=project)
             update_issue_data(project=project)
     print('Greeting, All data up to date!')
-
-
-def webdriver_login(driver, account, passwd):
-    driver.find_element_by_id('user_login').send_keys(account)
-    driver.find_element_by_id('user_password').send_keys(passwd)
-    driver.find_element_by_class_name('btn-save').click()
-
-    title = driver.find_element_by_class_name('shortcuts-activity').text
-    try:
-        assert title == 'Your projects'
-        print('Login Success!')
-    except AssertionError as e:
-        print('Login Failed!')
-    return driver
-
-
-def fetch_timeline_info(driver, url):
-    driver.get(url)
-    driver.implicitly_wait(10)
-
-    WebDriverWait(driver, 20).until(
-        EC.presence_of_element_located((
-            By.XPATH, '//*[@id="notes-list"]')))
-
-    ul = driver.find_element_by_id('notes-list')
-    contents = ul.find_elements_by_xpath('li')
-    for content in contents:
-        try:
-            username = content.find_element_by_class_name(
-                'note-headline-light').text
-            print(username)
-        except Exception as e:
-            pass
-
-        try:
-            action = content.find_element_by_class_name(
-                'system-note-message').find_element_by_xpath('span').text
-            print(action)
-        except Exception as e:
-            pass
-
-        try:
-            time = content.find_element_by_tag_name(
-                'time').get_attribute('data-original-title')
-            print(time)
-        except Exception as e:
-            pass
-
-
-def update_timeline_data(url):
-    driver = webdriver.Chrome()
-    driver.get(settings.FORGE_URL)
-    driver.maximize_window()
-    driver = webdriver_login(
-        driver, settings.FORGE_USERNAME, settings.FORGE_PASSWORD)
-    fetch_timeline_info(driver, url)
-    driver.quit()

@@ -98,3 +98,21 @@ class Issue(models.Model):
 
     class Meta:
         ordering = ['pk']
+
+
+class Action(models.Model):
+    issue = models.ForeignKey(
+        Issue, on_delete=models.CASCADE,
+        related_name='actions')
+    owner = models.ForeignKey(
+        ForgeUser, on_delete=models.CASCADE,
+        related_name='actions')
+    created = models.DateTimeField(null=True, blank=True)
+    action = models.CharField(max_length=256)
+    when = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return '{} - {}'.format(self.action, self.owner)
+
+    class Meta:
+        ordering = ['pk']
