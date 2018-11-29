@@ -40,7 +40,7 @@ class Project(models.Model):
 
 
 class Label(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=30)
     description = models.CharField(max_length=256, null=True, blank=True)
     when = models.DateTimeField(auto_now_add=True)
     project = models.ForeignKey(
@@ -54,7 +54,7 @@ class Label(models.Model):
 
 
 class Milestone(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=30)
     milestone_range = models.CharField(max_length=128, null=True, blank=True)
     status = models.CharField(max_length=128, null=True, blank=True)
     when = models.DateTimeField(auto_now_add=True)
@@ -89,6 +89,7 @@ class Issue(models.Model):
     when = models.DateTimeField(auto_now_add=True)
     project = models.ForeignKey(
         Project, on_delete=models.CASCADE, related_name='issues')
+    created = models.DateTimeField(null=True, blank=True)
 
     OPEN = 0
     CLOSED = 1
@@ -108,7 +109,7 @@ class Action(models.Model):
         User, on_delete=models.CASCADE,
         related_name='actions')
     created = models.DateTimeField(null=True, blank=True)
-    action = models.CharField(max_length=256)
+    action = models.CharField(max_length=512)
     when = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

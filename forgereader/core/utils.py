@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import requests
+
 from django.utils import timezone
 
 from django.conf import settings
@@ -211,7 +212,9 @@ def update_milestone_data(project):
 
         if name:
             Milestone.objects.update_or_create(
-                name=name, defaults={
+                name=name,
+                project=project,
+                defaults={
                     'name': name,
                     'milestone_range': milestone_range,
                     'status': status,
@@ -256,14 +259,16 @@ def update_label_data(project):
                 description = ''
             if name:
                 Label.objects.update_or_create(
-                    name=name, defaults={
+                    name=name,
+                    project=project,
+                    defaults={
                         'name': name,
                         'description': description,
                         'project': project
                     })
 
 
-def update_forgeuser_data():
+def update_user_data():
     # cs = Authentication(settings.USERNAME, settings.PASSWORD)
     # cs.login()
 
@@ -349,12 +354,12 @@ def update_project_data():
                     defaults={'name': name, 'namespace': namespace})
 
 
-def update_forge_data():
+def update_remote_data():
     cs = Authentication(settings.USERNAME, settings.PASSWORD)
     cs.login()
 
     update_project_data()
-    update_forgeuser_data()
+    update_user_data()
 
     projects = Project.objects.filter(
         namespace=settings.REPO_NAMESPACE,
@@ -381,101 +386,139 @@ def webdriver_login(driver, account, passwd):
     return driver
 
 
-def fetch_timeline_info(driver, issue):
-    url = settings.SITE_URL + '/{}/issues/{}'.format(
-        issue.project.repo_name, issue.number)
-    driver.get(url)
-    driver.implicitly_wait(100)
-    WebDriverWait(driver, 100).until(
-        EC.presence_of_element_located((
-            By.XPATH, '//*[@id="notes-list"]')))
+def fetch_timeline_info(driver, issue=None):
+    # url = settings.SITE_URL + '/{}/issues/{}'.format(
+    #     issue.project.repo_name, issue.number)
+    # driver.get(url)
+    # driver.implicitly_wait(100)
+    # WebDriverWait(driver, 100).until(
+    #     EC.presence_of_element_located((
+    #         By.XPATH, '//*[@id="notes-list"]')))
 
-    ul = driver.find_element_by_id('notes-list')
-    contents = ul.find_elements_by_xpath('li')
-    for content in contents:
-        try:
-            username = content.find_element_by_class_name(
-                'note-headline-light').text.replace('@', '')
-        except Exception as e:
-            username = ''
+    try:
+        ul = driver.find_element_by_id('notes-list')
+        contents = ul.find_elements_by_xpath('li')
+        for content in contents:
+            try:
+                username = content.find_element_by_class_name(
+                    'note-headline-light').text.replace('@', '')
+            except Exception as e:
+                username = ''
 
-        try:
-            action = content.find_element_by_class_name(
-                'system-note-message').find_element_by_xpath('span').text
-        except Exception as e:
-            action = ''
+            try:
+                action = content.find_element_by_class_name(
+                    'system-note-message').find_element_by_xpath('span').text
+            except Exception as e:
+                action = ''
 
-        try:
-            original_time = content.find_element_by_tag_name(
-                'time').get_attribute('data-original-title')
-            format_time = timezone.datetime.strptime(
-                original_time, '%b %d, %Y %I:%M%p %Z+0000')
-        except Exception as e:
-            format_time = None
-        if username:
-            owner = User.objects.filter(username=username).first()
-            if owner:
-                Action.objects.update_or_create(
-                    issue=issue,
-                    owner=owner,
-                    created=format_time,
-                    defaults={
-                        'issue': issue,
-                        'owner': owner,
-                        'created': format_time,
-                        'action': action
-                    }
-                )
-            print('Updated Success!')
-        print('Update Failed!')
+            try:
+                original_time = content.find_element_by_tag_name(
+                    'time').get_attribute('data-original-title')
+                format_time = timezone.datetime.strptime(
+                    original_time, '%b %d, %Y %I:%M%p GMT%z')
+            except Exception as e:
+                format_time = None
+            contents = {
+                'username': username,
+                'action': action,
+                'format_time': format_time,
+            }
+
+            if username:
+                owner = User.objects.filter(username=username).first()
+                if owner:
+                    Action.objects.update_or_create(
+                        issue=issue,
+                        owner=owner,
+                        created=format_time,
+                        defaults={
+                            'issue': issue,
+                            'owner': owner,
+                            'created': format_time,
+                            'action': action
+                        }
+                    )
+    except Exception as e:
+        print('WARNING: Failed Timeline in #{}'.format(1))
 
 
-def fetch_issue_detail_info(driver, issue_url):
+def fetch_issue_detail_info(driver, issue_url, num, project):
     driver.get(issue_url)
     driver.implicitly_wait(10)
 
     # WebDriverWait(driver, 100).until(
     #     EC.presence_of_element_located((
     #         By.XPATH, '//*[@id="notes-list"]')))
-    headers = driver.find_element_by_class_name('detail-page-header-body')
-    status1 = headers.find_element_by_class_name(
-        'status-box-issue-closed').text
-    status2 = headers.find_element_by_class_name(
-        'status-box-open').text
-    status = status1 if status1 else status2
+    try:
+        headers = driver.find_element_by_class_name('detail-page-header-body')
+        status = headers.find_element_by_class_name(
+            'status-box-issue-closed').text
+        # status2 = headers.find_element_by_class_name(
+        #     'status-box-open').text
+        status = Issue.CLOSED if status else Issue.OPEN
 
-    created = headers.find_element_by_tag_name(
-        'time').get_attribute('data-original-title')
+        created = headers.find_element_by_tag_name(
+            'time').get_attribute('data-original-title') + '-+0800'
+        format_created = timezone.datetime.strptime(
+            created, '%b %d, %Y %I:%M%p-%z')
 
-    author = headers.find_element_by_class_name('author').text
+        author = headers.find_element_by_class_name('author').text
+        author = User.objects.filter(full_name=author).first()
 
-    title = driver.find_element_by_class_name(
-        'detail-page-description').find_element_by_class_name(
-        'title-container').text
+        title = driver.find_element_by_class_name(
+            'detail-page-description').find_element_by_class_name(
+            'title-container').text
 
-    sidebar = driver.find_element_by_class_name('issuable-context-form')
-    assignee = sidebar.find_element_by_class_name(
-        'username').text.replace('@', '')
+        sidebar = driver.find_element_by_class_name('issuable-context-form')
+        try:
+            assignee = sidebar.find_element_by_class_name(
+                'username').text.replace('@', '')
+            assignee = User.objects.filter(username=assignee).first()
+        except Exception as e:
+            assignee = None
 
-    milestone = sidebar.find_element_by_class_name(
-        'milestone').text.strip().replace("\n", "").replace("\t", "").replace(
-        "\r", "").replace('Milestone', '').replace('Edit', '')
+        try:
+            milestone = sidebar.find_element_by_class_name(
+                'milestone').find_element_by_class_name('value').text
+            milestone = Milestone.objects.filter(name=milestone).first()
+            # milestone = sidebar.find_element_by_class_name(
+            #     'milestone').text.strip().replace("\n", "").replace(
+            #     "\t", "").replace("\r", "").replace(
+            #     'Milestone', '').replace('Edit', '')
+        except Exception as e:
+            milestone = None
 
-    labels = sidebar.find_element_by_class_name(
-        'issuable-show-labels').find_elements_by_tag_name('span')
-    label_list = []
-    for label in labels:
-        label_list.append(label.text)
-    contents = {
-        'status': status,
-        'created': created,
-        'author': author,
-        'title': title,
-        'assignee': assignee,
-        'milestone': milestone,
-        'labels': label_list
-    }
-    return contents
+        try:
+            labels = sidebar.find_element_by_class_name(
+                'issuable-show-labels').find_elements_by_tag_name('span')
+            label_list = []
+            for label in labels:
+                label_list.append(label.text)
+        except Exception as e:
+            label_list = []
+        contents = {
+            'status': status,
+            'created': format_created,
+            'author': author,
+            'title': title,
+            'assignee': assignee,
+            'milestone': milestone,
+            'number': num,
+        }
+        issue, msg = Issue.objects.update_or_create(
+            number=num,
+            project=project,
+            defaults=contents)
+
+        if label_list:
+            labels = Label.objects.filter(name__in=label_list)
+            if labels.exists():
+                issue.labels.add(*labels)
+
+        fetch_timeline_info(driver, issue)
+
+    except Exception as e:
+        print('WARNING: Failed in #{}'.format(num))
 
 
 def update_issue_infos(project):
@@ -490,7 +533,8 @@ def update_issue_infos(project):
     issue_count = driver.find_element_by_id(
         'state-all').find_element_by_class_name('badge').text.replace(',', '')
 
-    for issue in int(issue_count) + 1:
-        issue_url = '{}/{}'.format(url, issue)
-        fetch_issue_detail_info(driver, issue_url)
+    for i in range(1, int(issue_count) + 1):
+        issue_url = '{}/{}'.format(url, i)
+        fetch_issue_detail_info(driver, issue_url, i, project)
     driver.quit()
+    print('Greeting, All issues up to date!')

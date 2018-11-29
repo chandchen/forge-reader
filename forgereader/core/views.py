@@ -6,7 +6,7 @@ from django.http import HttpResponseRedirect
 from django.conf import settings
 
 from forgereader.core.models import Issue, User, Project
-from forgereader.core.utils import update_forge_data
+from forgereader.core.utils import update_remote_data
 
 
 forge_url = settings.SITE_URL
@@ -116,5 +116,5 @@ class ProjectListView(TemplateView):
 class SyncView(TemplateView):
 
     def get(self, request, *args, **kwargs):
-        update_forge_data()
+        update_remote_data()
         return HttpResponseRedirect('/?msg=ok')
