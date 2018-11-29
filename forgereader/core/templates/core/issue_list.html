@@ -23,6 +23,9 @@
             .search-form {
                 padding-bottom: 16px;
             }
+            .download-inputs {
+                display: none;
+            }
       </style>
     </head>
     <body>
@@ -114,6 +117,16 @@
                     </tbody>
                 </table>
             </div>
+            <form action="{% url 'file-download' %}">
+                <div class="download-inputs">
+                    <input name="project" type="text" value='{{ project_selected_id }}'>
+                    <input name="assignee" type="text" value='{{ assignee_selected_id }}'>
+                    <input name="time" type="text" value='{{ time_selected }}'>
+                </div>
+                <button type="submit" class="btn btn-outline-primary">
+                    Download
+                </button>
+            </form>
             {% endif %}
 
             <div class="table-container">
@@ -122,7 +135,6 @@
                       <tr>
                           <th scope="col">#</th>
                           <th scope="col">Issue Title</th>
-                          <th scope="col">Status</th>
                           <th scope="col">Start Doing</th>
                           <th scope="col">Closed</th>
                           <th scope="col">Time Spent</th>
@@ -133,8 +145,7 @@
                         {% for issue in issues %}
                         <tr>
                             <th scope="row"><a href="{{ issue.issue_link }}">{{ issue.number }}</a></th>
-                            <td title="{{ issue.title }}">{{ issue.title |truncatechars:30 }}</td>
-                            <td>{{ issue.status_display }}</td>
+                            <td title="{{ issue.title }}">{{ issue.title |truncatechars:40 }}</td>
                             <td>{{ issue.started_datetime }}</td>
                             <td>{{ issue.closed_datetime }}</td>
                             <td>{{ issue.time_spent_label }}</td>

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import requests
+import csv
 
 from django.utils import timezone
 
@@ -391,9 +392,10 @@ def fetch_timeline_info(driver, issue=None):
     #     issue.project.repo_name, issue.number)
     # driver.get(url)
     # driver.implicitly_wait(100)
-    # WebDriverWait(driver, 100).until(
-    #     EC.presence_of_element_located((
-    #         By.XPATH, '//*[@id="notes-list"]')))
+
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((
+            By.XPATH, '//*[@id="notes-list"]')))
 
     try:
         ul = driver.find_element_by_id('notes-list')
@@ -444,11 +446,10 @@ def fetch_timeline_info(driver, issue=None):
 
 def fetch_issue_detail_info(driver, issue_url, num, project):
     driver.get(issue_url)
-    driver.implicitly_wait(10)
+    # driver.implicitly_wait(10)
+    # time.sleep(5)
+    print('Loading #{}'.format(num))
 
-    # WebDriverWait(driver, 100).until(
-    #     EC.presence_of_element_located((
-    #         By.XPATH, '//*[@id="notes-list"]')))
     try:
         headers = driver.find_element_by_class_name('detail-page-header-body')
         status = headers.find_element_by_class_name(
@@ -481,10 +482,6 @@ def fetch_issue_detail_info(driver, issue_url, num, project):
             milestone = sidebar.find_element_by_class_name(
                 'milestone').find_element_by_class_name('value').text
             milestone = Milestone.objects.filter(name=milestone).first()
-            # milestone = sidebar.find_element_by_class_name(
-            #     'milestone').text.strip().replace("\n", "").replace(
-            #     "\t", "").replace("\r", "").replace(
-            #     'Milestone', '').replace('Edit', '')
         except Exception as e:
             milestone = None
 
@@ -529,7 +526,7 @@ def update_issue_infos(project):
         driver, settings.USERNAME, settings.PASSWORD)
     url = settings.SITE_URL + '/{}/issues'.format(project.repo_name)
     driver.get(url)
-    driver.implicitly_wait(10)
+    # driver.implicitly_wait(10)
     issue_count = driver.find_element_by_id(
         'state-all').find_element_by_class_name('badge').text.replace(',', '')
 
@@ -538,3 +535,26 @@ def update_issue_infos(project):
         fetch_issue_detail_info(driver, issue_url, i, project)
     driver.quit()
     print('Greeting, All issues up to date!')
+
+
+def generate_csv_file(issues, file_name):
+    csv_readers = [
+        'Issue', 'Title', 'Status', 'Author', 'Assignee', 'Started', 'Closed',
+        'Time Spent', 'Project', 'Milestone', 'Labels']
+    c_file = open(
+        "{}{}".format(settings.DOWNLOAD_PATH, file_name), "w")
+    search_file = csv.writer(c_file)
+    search_file.writerow(csv_readers)
+
+    for issue in issues:
+        assignee = issue.assignee.username if issue.assignee else ''
+        milestone = issue.milestone.name if issue.milestone else ''
+        issue_row = [
+            issue.number, issue.title, issue.status_display,
+            issue.author.username, assignee,
+            issue.started_datetime, issue.closed_datetime, issue.time_spent,
+            issue.project.repo_name, milestone, issue.labels_display
+        ]
+        search_file.writerow(issue_row)
+
+    c_file.close()

@@ -1,13 +1,13 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, FileResponse
 
 from django.conf import settings
 from django.utils import timezone
 
 from forgereader.core.models import Issue, User, Project
-from forgereader.core.utils import update_remote_data
+from forgereader.core.utils import update_remote_data, generate_csv_file
 
 
 forge_url = settings.SITE_URL
@@ -17,7 +17,9 @@ class IssueListView(TemplateView):
     template_name = "core/issue_list.html"
 
     def get(self, request, *args, **kwargs):
-        filters = {}
+        filters = {
+            'status': Issue.CLOSED
+        }
         show_statistics = False
 
         project_selected_id = int(request.GET.get('project', 0))
@@ -138,3 +140,32 @@ class SyncView(TemplateView):
     def get(self, request, *args, **kwargs):
         update_remote_data()
         return HttpResponseRedirect('/?msg=ok')
+
+
+class Download(TemplateView):
+
+    def get(self, request, *args, **kwargs):
+        filters = {
+            'status': Issue.CLOSED
+        }
+        filters['project_id'] = int(request.GET.get('project', 0))
+        filters['assignee_id'] = int(request.GET.get('assignee', 0))
+        time_selected = int(request.GET.get('time', 0))
+        filters['created__gt'] = timezone.now() - timezone.timedelta(
+            days=time_selected)
+        assignee = User.objects.get(pk=filters['assignee_id'])
+        project = Project.objects.get(pk=filters['project_id'])
+        issues = Issue.objects.filter(**filters).order_by('-number')
+        now = timezone.now().strftime("%Y-%m-%d")
+
+        file_name = '{}-@{}-{}.csv'.format(
+            project.name, assignee.username, now)
+
+        generate_csv_file(issues, file_name)
+
+        file = open('{}{}'.format(settings.DOWNLOAD_PATH, file_name), 'rb')
+        response = FileResponse(file)
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = 'attachment;filename="{}"'.format(
+            file_name)
+        return response

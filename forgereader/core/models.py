@@ -137,6 +137,8 @@ class Issue(models.Model):
     @property
     def time_spent_label(self):
         if self.status == self.CLOSED:
+            if self.time_spent == 0:
+                return '1 day'
             return '{} days'.format(self.time_spent)
         return '-'
 
@@ -148,6 +150,13 @@ class Issue(models.Model):
     def issue_link(self):
         return '{}/{}/issues/{}'.format(
             settings.SITE_URL, self.project.repo_name, self.number)
+
+    @property
+    def labels_display(self):
+        label_list = []
+        for label in self.labels.all():
+            label_list.append(label.name)
+        return label_list
 
 
 class Action(models.Model):

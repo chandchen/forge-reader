@@ -134,6 +134,8 @@ DEVELOPERS = []
 
 TIME_OPTION = [7, 14, 30]
 
+DOWNLOAD_PATH = ''
+
 try:
     from .local_settings import *
 except ImportError:
