@@ -32,12 +32,14 @@ class IssueAdmin(admin.ModelAdmin):
     model = Issue
     list_display = ('title', 'number', 'when')
     raw_id_fields = ('author', 'assignee', 'milestone')
+    search_fields = ('title', )
 
 
 class ActionAdmin(admin.ModelAdmin):
     model = Issue
-    list_display = ('action', 'created', 'when')
+    list_display = ('action', 'issue', 'created', 'when')
     raw_id_fields = ('issue', 'owner')
+    search_fields = ('issue__title', 'action')
 
 
 admin.site.register(User, UserAdmin)

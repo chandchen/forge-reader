@@ -1,5 +1,7 @@
 from django.db import models
 
+from django.conf import settings
+
 
 ISSUE_STATUS_CHOICES = (
     (0, 'open'),
@@ -91,6 +93,9 @@ class Issue(models.Model):
         Project, on_delete=models.CASCADE, related_name='issues')
     created = models.DateTimeField(null=True, blank=True)
 
+    started = models.DateTimeField(null=True, blank=True)
+    closed = models.DateTimeField(null=True, blank=True)
+
     OPEN = 0
     CLOSED = 1
 
@@ -99,6 +104,50 @@ class Issue(models.Model):
 
     class Meta:
         ordering = ['pk']
+
+    @property
+    def status_display(self):
+        return self.get_status_display().capitalize()
+
+    @property
+    def started_datetime(self):
+        action = self.actions.filter(
+            action__icontains='added Doing').first()
+        if action:
+            return action.created
+        else:
+            return self.created
+
+    @property
+    def closed_datetime(self):
+        action = self.actions.filter(
+            action__icontains='closed').last()
+        if action:
+            return action.created
+        else:
+            return None
+
+    @property
+    def time_spent(self):
+        time_spent = 0
+        if self.closed_datetime:
+            time_spent = (self.closed_datetime - self.started_datetime).days
+        return int(time_spent)
+
+    @property
+    def time_spent_label(self):
+        if self.status == self.CLOSED:
+            return '{} days'.format(self.time_spent)
+        return '-'
+
+    @property
+    def reopen_times(self):
+        return self.actions.filter(action__icontains='reopened').count()
+
+    @property
+    def issue_link(self):
+        return '{}/{}/issues/{}'.format(
+            settings.SITE_URL, self.project.repo_name, self.number)
 
 
 class Action(models.Model):

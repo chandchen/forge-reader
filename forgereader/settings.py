@@ -132,6 +132,8 @@ REPO_NAME = []
 
 DEVELOPERS = []
 
+TIME_OPTION = [7, 14, 30]
+
 try:
     from .local_settings import *
 except ImportError:
