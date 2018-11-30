@@ -65,6 +65,7 @@
                 <div class="col-lg-3">
                     <div class="form-group">
                         <select class="form-control" id="exampleSelect1" name="project">
+                            <option value="0">All project</option>
                             {% for project in projects %}
                             <option value="{{ project.pk }}" {% if project.pk == project_selected_id %} selected {% endif %} >{{ project.name }}
 </option>
@@ -75,6 +76,7 @@
                 <div class="col-lg-3">
                     <div class="form-group">
                         <select class="form-control" id="exampleSelect1" name="assignee">
+                            <option value="0">All assignee</option>
                             {% for user in users %}
                             <option value="{{ user.pk }}" {% if user.pk == assignee_selected_id %} selected {% endif %} >{{ user.username }}</option>
                             {% endfor %}
@@ -84,8 +86,19 @@
                 <div class="col-lg-3">
                     <div class="form-group">
                         <select class="form-control" id="exampleSelect1" name="time">
+                            <option value="0">All days</option>
                             {% for time_option in time_options %}
                             <option value="{{ time_option }}" {% if time_option == time_selected %} selected {% endif %}>{{ time_option }} days</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="form-group">
+                        <select class="form-control" id="exampleSelect1" name="author">
+                            <option value="0">All author</option>
+                            {% for user in users %}
+                            <option value="{{ user.pk }}" {% if user.pk == author_selected %} selected {% endif %} >{{ user.username }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -95,11 +108,12 @@
             </form>
 
             {% if show_statistics %}
+            {% if show_assignee_statistics %}
             <div class="card border-secondary mb-3">
                 <table class="table table-hover">
                     <thead>
                       <tr>
-                          <th scope="col">Name</th>
+                          <th scope="col">Assignee</th>
                           <th scope="col">Total Issues</th>
                           <th scope="col">Total Time Spent</th>
                           <th scope="col">Avg Time / Per Issue</th>
@@ -111,17 +125,45 @@
                             <th scope="row">{{ infos.assignee_name }}</th>
                             <td>{{ infos.issue_count }}</td>
                             <td>{{ infos.total_spent }} days</td>
-                            <td>{{ infos.avg_spent }} days</td>
+                            <td>{{ infos.avg_spent }}</td>
                             <td>{{ infos.reopen_count }}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            {% endif %}
+
+            {% if show_author_statistics %}
+            <div class="card border-secondary mb-3">
+                <table class="table table-hover">
+                    <thead>
+                      <tr>
+                          <th scope="col">Author</th>
+                          <th scope="col">Total Issues</th>
+                          <th scope="col">Bug Issues</th>
+                          <th scope="col">Enhancements</th>
+                          <th scope="col">Others</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">{{ author_infos.author_name }}</th>
+                            <td>{{ infos.issue_count }}</td>
+                            <td>{{ author_infos.bug_issue_count }}</td>
+                            <td>{{ author_infos.enhancement_count }}</td>
+                            <td>{{ author_infos.others_count }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
             <form action="{% url 'file-download' %}">
                 <div class="download-inputs">
                     <input name="project" type="text" value='{{ project_selected_id }}'>
                     <input name="assignee" type="text" value='{{ assignee_selected_id }}'>
                     <input name="time" type="text" value='{{ time_selected }}'>
+                    <input name="author" type="text" value='{{ author_selected }}'>
                 </div>
                 <button type="submit" class="btn btn-outline-primary">
                     Download
@@ -145,9 +187,9 @@
                         {% for issue in issues %}
                         <tr>
                             <th scope="row"><a href="{{ issue.issue_link }}">{{ issue.number }}</a></th>
-                            <td title="{{ issue.title }}">{{ issue.title |truncatechars:40 }}</td>
-                            <td>{{ issue.started_datetime }}</td>
-                            <td>{{ issue.closed_datetime }}</td>
+                            <td title="{{ issue.title }}">{{ issue.title |truncatechars:30 }}</td>
+                            <td>{{ issue.started }}</td>
+                            <td>{{ issue.closed }}</td>
                             <td>{{ issue.time_spent_label }}</td>
                             <td>{{ issue.reopen_times }}</td>
                         </tr>

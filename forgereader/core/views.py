@@ -21,6 +21,8 @@ class IssueListView(TemplateView):
             'status': Issue.CLOSED
         }
         show_statistics = False
+        show_assignee_statistics = False
+        show_author_statistics = False
 
         project_selected_id = int(request.GET.get('project', 0))
         if project_selected_id != 0:
@@ -32,24 +34,46 @@ class IssueListView(TemplateView):
             assignee_name = User.objects.get(
                 pk=assignee_selected_id).full_name
             show_statistics = True
+            show_assignee_statistics = True
         time_selected = int(request.GET.get('time', 0))
         if time_selected != 0:
             selected_time = timezone.now() - timezone.timedelta(
                 days=time_selected)
-            filters['created__gt'] = selected_time
+            filters['closed__gt'] = selected_time
+        author_selected = int(request.GET.get('author', 0))
+        author_name = ''
+        if author_selected != 0:
+            filters['author_id'] = author_selected
+            author_name = User.objects.get(
+                pk=author_selected).full_name
+            show_statistics = True
+            show_author_statistics = True
 
         issues = Issue.objects.filter(**filters).order_by('-number')
         issue_count = issues.count()
+
         total_time = 0
         avg_time_spent = 0
+        bug_issue_count = 0
+        enhancement_count = 0
 
         reopen_count = 0
         if show_statistics:
             for issue in issues:
                 total_time += issue.time_spent
                 reopen_count += issue.reopen_times
+                label_string = ''.join(issue.labels_display).lower()
+                if 'bug' in label_string:
+                    bug_issue_count += 1
+                if 'enhancement' in label_string:
+                    enhancement_count += 1
         if issue_count and total_time:
             avg_time_spent = round(total_time / issue_count)
+
+        if avg_time_spent != 0:
+            avg_time_spent_label = '{} days'.format(avg_time_spent)
+        else:
+            avg_time_spent_label = '1 day'
 
         project_options = Project.objects.filter(
             name__in=settings.REPO_NAME).order_by('name')
@@ -71,8 +95,15 @@ class IssueListView(TemplateView):
             'assignee_name': assignee_name,
             'issue_count': issue_count,
             'total_spent': total_time,
-            'avg_spent': avg_time_spent,
+            'avg_spent': avg_time_spent_label,
             'reopen_count': reopen_count,
+        }
+
+        author_infos = {
+            'author_name': author_name,
+            'bug_issue_count': bug_issue_count,
+            'enhancement_count': enhancement_count,
+            'others_count': issue_count - bug_issue_count - enhancement_count,
         }
 
         contents = {
@@ -80,12 +111,16 @@ class IssueListView(TemplateView):
             'issues': issue_list,
             'project_selected_id': int(project_selected_id),
             'assignee_selected_id': int(assignee_selected_id),
+            'author_selected': int(author_selected),
             'time_selected': int(time_selected),
             'time_options': settings.TIME_OPTION,
             'users': user_options,
             'projects': project_options,
             'infos': infos,
             'show_statistics': show_statistics,
+            'show_assignee_statistics': show_assignee_statistics,
+            'show_author_statistics': show_author_statistics,
+            'author_infos': author_infos,
         }
         return render(request, self.template_name, contents)
 
@@ -148,18 +183,40 @@ class Download(TemplateView):
         filters = {
             'status': Issue.CLOSED
         }
-        filters['project_id'] = int(request.GET.get('project', 0))
-        filters['assignee_id'] = int(request.GET.get('assignee', 0))
-        time_selected = int(request.GET.get('time', 0))
-        filters['created__gt'] = timezone.now() - timezone.timedelta(
-            days=time_selected)
-        assignee = User.objects.get(pk=filters['assignee_id'])
-        project = Project.objects.get(pk=filters['project_id'])
-        issues = Issue.objects.filter(**filters).order_by('-number')
-        now = timezone.now().strftime("%Y-%m-%d")
+        project = ''
+        assignee = ''
+        author = ''
 
-        file_name = '{}-@{}-{}.csv'.format(
-            project.name, assignee.username, now)
+        project_selected = int(request.GET.get('project', 0))
+        if project_selected != 0:
+            filters['project_id'] = project_selected
+            project = Project.objects.get(pk=project_selected).name
+
+        assignee_selected = int(request.GET.get('assignee', 0))
+        if assignee_selected != 0:
+            filters['assignee_id'] = assignee_selected
+            assignee = User.objects.get(pk=assignee_selected).username
+
+        time_selected = int(request.GET.get('time', 0))
+        if time_selected != 0:
+            selected_time = timezone.now() - timezone.timedelta(
+                days=time_selected)
+            filters['closed__gt'] = selected_time
+
+        author_selected = int(request.GET.get('author', 0))
+        if author_selected != 0:
+            filters['author_id'] = author_selected
+            author = User.objects.get(pk=author_selected).username
+
+        issues = Issue.objects.filter(**filters).order_by('-number')
+
+        now = timezone.localtime(timezone.now()).strftime("%Y-%m-%d-%H%M")
+
+        p_string = '{}-'.format(project) if project else ''
+        a1_string = 'assignee@{}-'.format(assignee) if assignee else ''
+        a2_string = 'author@{}-'.format(author) if author else ''
+
+        file_name = '{}{}{}{}.csv'.format(p_string, a1_string, a2_string, now)
 
         generate_csv_file(issues, file_name)
 

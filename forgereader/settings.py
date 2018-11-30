@@ -136,6 +136,8 @@ TIME_OPTION = [7, 14, 30]
 
 DOWNLOAD_PATH = ''
 
+DOING_LABELS = {}
+
 try:
     from .local_settings import *
 except ImportError:

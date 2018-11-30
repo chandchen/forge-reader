@@ -111,17 +111,18 @@ class Issue(models.Model):
 
     @property
     def started_datetime(self):
+        string = 'added {}'.format(settings.DOING_LABELS[self.project.name])
         action = self.actions.filter(
-            action__icontains='added Doing').first()
+            action__icontains=string).order_by('created').first()
         if action:
             return action.created
         else:
-            return self.created
+            return None
 
     @property
     def closed_datetime(self):
         action = self.actions.filter(
-            action__icontains='closed').last()
+            action__icontains='closed').order_by('created').last()
         if action:
             return action.created
         else:
@@ -130,14 +131,16 @@ class Issue(models.Model):
     @property
     def time_spent(self):
         time_spent = 0
-        if self.closed_datetime:
+        if self.closed_datetime and self.started_datetime:
             time_spent = (self.closed_datetime - self.started_datetime).days
         return int(time_spent)
 
     @property
     def time_spent_label(self):
         if self.status == self.CLOSED:
-            if self.time_spent == 0:
+            if self.time_spent <= 1:
+                if self.started is None or self.closed is None:
+                    return '-'
                 return '1 day'
             return '{} days'.format(self.time_spent)
         return '-'

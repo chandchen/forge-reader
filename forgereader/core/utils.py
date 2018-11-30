@@ -429,10 +429,11 @@ def fetch_timeline_info(driver, issue=None):
             if username:
                 owner = User.objects.filter(username=username).first()
                 if owner:
-                    Action.objects.update_or_create(
+                    a, msg = Action.objects.update_or_create(
                         issue=issue,
                         owner=owner,
                         created=format_time,
+                        action=action,
                         defaults={
                             'issue': issue,
                             'owner': owner,
@@ -530,7 +531,10 @@ def update_issue_infos(project):
     issue_count = driver.find_element_by_id(
         'state-all').find_element_by_class_name('badge').text.replace(',', '')
 
-    for i in range(1, int(issue_count) + 1):
+    start_index = 1
+    if project.name == 'channelfix':
+        start_index = int(issue_count) - 500
+    for i in range(start_index, int(issue_count) + 1):
         issue_url = '{}/{}'.format(url, i)
         fetch_issue_detail_info(driver, issue_url, i, project)
     driver.quit()
@@ -552,9 +556,25 @@ def generate_csv_file(issues, file_name):
         issue_row = [
             issue.number, issue.title, issue.status_display,
             issue.author.username, assignee,
-            issue.started_datetime, issue.closed_datetime, issue.time_spent,
+            issue.started_datetime, issue.closed_datetime,
+            issue.time_spent_label,
             issue.project.repo_name, milestone, issue.labels_display
         ]
         search_file.writerow(issue_row)
 
     c_file.close()
+
+
+def update_issue_time_infos():
+    closed_issues = Issue.objects.select_related('project').filter(
+        status=Issue.CLOSED, project__name__in=settings.REPO_NAME)
+    for issue in closed_issues:
+        issue.started = issue.started_datetime
+        issue.closed = issue.closed_datetime
+        issue.save(update_fields=['started', 'closed'])
+        # if issue.started is None:
+        #     print('{}-#{}-no-doing-date'.format(
+        #         issue.project.name, issue.number))
+    no_start_date_count = Issue.objects.filter(started__isnull=True).count()
+    print('There are {} issues with None started date!'.format(
+        no_start_date_count))
