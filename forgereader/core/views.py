@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Q
 
 from forgereader.core.models import Issue, User, Project, SyncInfo
 from forgereader.core.utils import (
@@ -29,10 +30,11 @@ class IssueListView(TemplateView):
             filters['project_id'] = project_selected_id
         assignee_selected_id = int(request.GET.get('assignee', 0))
         assignee_name = ''
+        as_p = ''
         if assignee_selected_id != 0:
-            filters['assignee_id'] = assignee_selected_id
-            assignee_name = User.objects.get(
-                pk=assignee_selected_id).full_name
+            assignee = User.objects.get(pk=assignee_selected_id)
+            as_p = Q(assignee=assignee) | Q(participants=assignee)
+            assignee_name = assignee.full_name
             show_statistics = True
             show_assignee_statistics = True
         time_selected = int(request.GET.get('time', 0))
@@ -49,7 +51,10 @@ class IssueListView(TemplateView):
             show_statistics = True
             show_author_statistics = True
 
-        issues = Issue.objects.filter(**filters).order_by('-number')
+        if as_p:
+            issues = Issue.objects.filter(as_p, **filters).order_by('-number')
+        else:
+            issues = Issue.objects.filter(**filters).order_by('-number')
         issue_count = issues.count()
 
         total_time = 0
@@ -191,8 +196,9 @@ class SyncView(LoginRequiredMixin, TemplateView):
             success = update_issue_infos(records)
             if success:
                 msg = 'success'
-        update_issue_time_infos()
+
         if msg == 'success':
+            update_issue_time_infos()
             SyncInfo.objects.create(owner=request.user)
         contents = {
             'msg': msg
@@ -207,7 +213,7 @@ class Download(TemplateView):
             'status': Issue.CLOSED
         }
         project = ''
-        assignee = ''
+        assignee_name = ''
         author = ''
 
         project_selected = int(request.GET.get('project', 0))
@@ -216,9 +222,11 @@ class Download(TemplateView):
             project = Project.objects.get(pk=project_selected).name
 
         assignee_selected = int(request.GET.get('assignee', 0))
+        as_p = ''
         if assignee_selected != 0:
-            filters['assignee_id'] = assignee_selected
-            assignee = User.objects.get(pk=assignee_selected).username
+            assignee = User.objects.get(pk=assignee_selected)
+            as_p = Q(assignee=assignee) | Q(participants=assignee)
+            assignee_name = assignee.username
 
         time_selected = int(request.GET.get('time', 0))
         if time_selected != 0:
@@ -231,12 +239,16 @@ class Download(TemplateView):
             filters['author_id'] = author_selected
             author = User.objects.get(pk=author_selected).username
 
-        issues = Issue.objects.filter(**filters).order_by('-number')
+        if as_p:
+            issues = Issue.objects.filter(as_p, **filters).order_by('-number')
+        else:
+            issues = Issue.objects.filter(**filters).order_by('-number')
 
         now = timezone.localtime(timezone.now()).strftime("%Y-%m-%d-%H%M")
 
         p_string = '{}-'.format(project) if project else ''
-        a1_string = 'assignee@{}-'.format(assignee) if assignee else ''
+        a1_string = 'assignee@{}-'.format(
+            assignee_name) if assignee_name else ''
         a2_string = 'author@{}-'.format(author) if author else ''
 
         file_name = '{}{}{}{}.csv'.format(p_string, a1_string, a2_string, now)

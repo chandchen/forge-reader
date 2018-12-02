@@ -97,6 +97,9 @@ class Issue(models.Model):
     started = models.DateTimeField(null=True, blank=True)
     closed = models.DateTimeField(null=True, blank=True)
 
+    participants = models.ManyToManyField(
+        User, related_name='participated_issues', blank=True)
+
     OPEN = 0
     CLOSED = 1
 
@@ -161,6 +164,24 @@ class Issue(models.Model):
         for label in self.labels.all():
             label_list.append(label.name)
         return label_list
+
+    def participated(self, user):
+        action = self.actions.filter(
+            owner=user, action__icontains='added Doing').first()
+        if action:
+            return action.created
+        return None
+
+    @property
+    def participation(self):
+        participant_list = []
+        for participant in self.participants.all():
+            dic = {
+                'username': participant.username,
+                'participated_time': self.participated(participant)
+            }
+            participant_list.append(dic)
+        return participant_list
 
 
 class Action(models.Model):

@@ -544,7 +544,7 @@ def update_issue_infos(index):
 def generate_csv_file(issues, file_name):
     csv_readers = [
         'Issue', 'Title', 'Status', 'Author', 'Assignee', 'Started', 'Closed',
-        'Time Spent', 'Project', 'Milestone', 'Labels']
+        'Time Spent', 'Participation', 'Project', 'Milestone', 'Labels']
     c_file = open(
         "{}{}".format(settings.DOWNLOAD_PATH, file_name), "w")
     search_file = csv.writer(c_file)
@@ -557,7 +557,7 @@ def generate_csv_file(issues, file_name):
             issue.number, issue.title, issue.status_display,
             issue.author.username, assignee,
             issue.started_datetime, issue.closed_datetime,
-            issue.time_spent_label,
+            issue.time_spent_label, issue.participation,
             issue.project.repo_name, milestone, issue.labels_display
         ]
         search_file.writerow(issue_row)
@@ -571,5 +571,12 @@ def update_issue_time_infos():
     for issue in closed_issues:
         issue.started = issue.started_datetime
         issue.closed = issue.closed_datetime
-        issue.save(update_fields=['started', 'closed'])
+
+        doing_actions = issue.actions.filter(
+            action__icontains='added Doing').order_by('when')
+        for action in doing_actions:
+            if issue.assignee != action.owner:
+                if action.owner not in issue.participants.all():
+                    issue.participants.add(action.owner)
+        issue.save(update_fields=['started', 'closed', 'participated'])
     return True
