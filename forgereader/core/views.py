@@ -1,16 +1,16 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.http import HttpResponseRedirect, FileResponse
+from django.http import FileResponse
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from django.conf import settings
 from django.utils import timezone
 
-from forgereader.core.models import Issue, User, Project
-from forgereader.core.utils import update_remote_data, generate_csv_file
-
-
-forge_url = settings.SITE_URL
+from forgereader.core.models import Issue, User, Project, SyncInfo
+from forgereader.core.utils import (
+    update_remote_data, generate_csv_file, update_issue_infos,
+    update_issue_time_infos)
 
 
 class IssueListView(TemplateView):
@@ -107,7 +107,6 @@ class IssueListView(TemplateView):
         }
 
         contents = {
-            'forge_url': forge_url,
             'issues': issue_list,
             'project_selected_id': int(project_selected_id),
             'assignee_selected_id': int(assignee_selected_id),
@@ -140,8 +139,7 @@ class UserListView(TemplateView):
         except EmptyPage:
             user_list = paginator.page(paginator.num_pages)
         return render(request, self.template_name, {
-            'users': user_list,
-            'forge_url': forge_url})
+            'users': user_list, })
 
 
 class ProjectListView(TemplateView):
@@ -163,18 +161,43 @@ class ProjectListView(TemplateView):
         except EmptyPage:
             project_list = paginator.page(paginator.num_pages)
 
+        sync_info = SyncInfo.objects.last()
+        last_updated = ''
+        if sync_info:
+            last_updated = sync_info.when
+
         contents = {
             'msg': msg,
             'projects': project_list,
-            'namespace': settings.REPO_NAMESPACE}
+            'namespace': settings.REPO_NAMESPACE,
+            'last_updated': last_updated,
+        }
         return render(request, self.template_name, contents)
 
 
-class SyncView(TemplateView):
+class SyncView(LoginRequiredMixin, TemplateView):
+    template_name = "core/syncing.html"
 
     def get(self, request, *args, **kwargs):
-        update_remote_data()
-        return HttpResponseRedirect('/?msg=ok')
+        msg = ''
+        info = int(request.GET.get('info', 0))
+        if info == 1:
+            success = update_remote_data()
+            if success:
+                msg = 'success'
+
+        records = int(request.GET.get('record', 0))
+        if records > 0:
+            success = update_issue_infos(records)
+            if success:
+                msg = 'success'
+        update_issue_time_infos()
+        if msg == 'success':
+            SyncInfo.objects.create(owner=request.user)
+        contents = {
+            'msg': msg
+        }
+        return render(request, self.template_name, contents)
 
 
 class Download(TemplateView):

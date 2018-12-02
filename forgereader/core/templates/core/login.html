@@ -1,0 +1,13 @@
+{% extends 'core/base.html' %}
+{% block title %}Login &bull; ForkLab{% endblock %}
+{% block content %}
+    <form class="form" method="post">
+      <fieldset>
+        <div class="form-group">
+        {% csrf_token %}
+        {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn btn-primary">Sign in</button>
+      </fieldset>
+    </form>
+{% endblock %}

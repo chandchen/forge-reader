@@ -1,6 +1,7 @@
 from django.db import models
 
 from django.conf import settings
+from django.contrib.auth.models import User as D_User
 
 
 ISSUE_STATUS_CHOICES = (
@@ -178,3 +179,10 @@ class Action(models.Model):
 
     class Meta:
         ordering = ['pk']
+
+
+class SyncInfo(models.Model):
+    owner = models.ForeignKey(
+        D_User, on_delete=models.CASCADE,
+        related_name='sync_infos')
+    when = models.DateTimeField(auto_now_add=True)

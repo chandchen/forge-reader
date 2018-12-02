@@ -1,217 +1,156 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width,initial-scale=1.0">
-      <title>Issues &bull; Dashboard</title>
-      <link rel="stylesheet" type="text/css" href="{% static "core/css/bootstrap.min.css" %}">
-      <style type="text/css">
-            .container {
-                padding-top: 75px;
-            }
-
-            .navbar {
-                position: fixed;
-                top: 0;
-                z-index: 1;
-                width: 100%;
-            }
-            .table-container {
-                padding-top: 16px;
-            }
-            .search-form {
-                padding-bottom: 16px;
-            }
-            .download-inputs {
-                display: none;
-            }
-      </style>
-    </head>
-    <body>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-          <a class="navbar-brand" href="{{ forge_url }}">GitLab</a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor03" aria-controls="navbarColor03" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-
-          <div class="collapse navbar-collapse" id="navbarColor03">
-            <ul class="navbar-nav mr-auto">
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'project-list' %}">Projects</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'issue-list' %}">Issues</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Milestone</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Labels</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'user-list' %}">Members</a>
-              </li>
-            </ul>
-            <form class="form-inline my-2 my-lg-0" action="{% url 'syncing' %}" method="GET">
-              <button class="btn btn-secondary my-2 my-sm-0" type="submit">Sync</a></button>
-            </form>
-          </div>
-        </nav>
-
-        <div class="container">
-            <form class="search-form" action="">
-                <div class="row">
-                <div class="col-lg-3">
-                    <div class="form-group">
-                        <select class="form-control" id="exampleSelect1" name="project">
-                            <option value="0">All project</option>
-                            {% for project in projects %}
-                            <option value="{{ project.pk }}" {% if project.pk == project_selected_id %} selected {% endif %} >{{ project.name }}
-</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="col-lg-3">
-                    <div class="form-group">
-                        <select class="form-control" id="exampleSelect1" name="assignee">
-                            <option value="0">All assignee</option>
-                            {% for user in users %}
-                            <option value="{{ user.pk }}" {% if user.pk == assignee_selected_id %} selected {% endif %} >{{ user.username }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="col-lg-3">
-                    <div class="form-group">
-                        <select class="form-control" id="exampleSelect1" name="time">
-                            <option value="0">All days</option>
-                            {% for time_option in time_options %}
-                            <option value="{{ time_option }}" {% if time_option == time_selected %} selected {% endif %}>{{ time_option }} days</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="col-lg-3">
-                    <div class="form-group">
-                        <select class="form-control" id="exampleSelect1" name="author">
-                            <option value="0">All author</option>
-                            {% for user in users %}
-                            <option value="{{ user.pk }}" {% if user.pk == author_selected %} selected {% endif %} >{{ user.username }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                </div>
-                <button type="submit" class="btn btn-secondary">Search</button>
-            </form>
-
-            {% if show_statistics %}
-            {% if show_assignee_statistics %}
-            <div class="card border-secondary mb-3">
-                <table class="table table-hover">
-                    <thead>
-                      <tr>
-                          <th scope="col">Assignee</th>
-                          <th scope="col">Total Issues</th>
-                          <th scope="col">Total Time Spent</th>
-                          <th scope="col">Avg Time / Per Issue</th>
-                          <th scope="col">Reopen Count</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th scope="row">{{ infos.assignee_name }}</th>
-                            <td>{{ infos.issue_count }}</td>
-                            <td>{{ infos.total_spent }} days</td>
-                            <td>{{ infos.avg_spent }}</td>
-                            <td>{{ infos.reopen_count }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-
-            {% if show_author_statistics %}
-            <div class="card border-secondary mb-3">
-                <table class="table table-hover">
-                    <thead>
-                      <tr>
-                          <th scope="col">Author</th>
-                          <th scope="col">Total Issues</th>
-                          <th scope="col">Bug Issues</th>
-                          <th scope="col">Enhancements</th>
-                          <th scope="col">Others</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th scope="row">{{ author_infos.author_name }}</th>
-                            <td>{{ infos.issue_count }}</td>
-                            <td>{{ author_infos.bug_issue_count }}</td>
-                            <td>{{ author_infos.enhancement_count }}</td>
-                            <td>{{ author_infos.others_count }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-
-            <form action="{% url 'file-download' %}">
-                <div class="download-inputs">
-                    <input name="project" type="text" value='{{ project_selected_id }}'>
-                    <input name="assignee" type="text" value='{{ assignee_selected_id }}'>
-                    <input name="time" type="text" value='{{ time_selected }}'>
-                    <input name="author" type="text" value='{{ author_selected }}'>
-                </div>
-                <button type="submit" class="btn btn-outline-primary">
-                    Download
-                </button>
-            </form>
-            {% endif %}
-
-            <div class="table-container">
-                <table class="table table-hover">
-                    <thead>
-                      <tr>
-                          <th scope="col">#</th>
-                          <th scope="col">Issue Title</th>
-                          <th scope="col">Start Doing</th>
-                          <th scope="col">Closed</th>
-                          <th scope="col">Time Spent</th>
-                          <th scope="col">Reopens</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                        {% for issue in issues %}
-                        <tr>
-                            <th scope="row"><a href="{{ issue.issue_link }}">{{ issue.number }}</a></th>
-                            <td title="{{ issue.title }}">{{ issue.title |truncatechars:30 }}</td>
-                            <td>{{ issue.started }}</td>
-                            <td>{{ issue.closed }}</td>
-                            <td>{{ issue.time_spent_label }}</td>
-                            <td>{{ issue.reopen_times }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <div class="pagination alert alert-dismissible alert-secondary">
-                <span class="step-links">
-                    {% if issues.has_previous %}
-                        <a href="?project={{ project_selected_id }}&assignee={{ assignee_selected_id }}&time={{ time_selected }}&page={{ issues.previous_page_number }}">previous</a>
-                    {% endif %}
-             
-                    <span class="current">
-                        Page {{ issues.number }} of {{ issues.paginator.num_pages }}.
-                    </span>
-             
-                    {% if issues.has_next %}
-                        <a href="?project={{ project_selected_id }}&assignee={{ assignee_selected_id }}&time={{ time_selected }}&page={{ issues.next_page_number }}">next</a>
-                    {% endif %}
-                </span>
+{% extends 'core/base.html' %}
+{% block title %}Issues &bull; ForkLab{% endblock %}
+{% block content %}
+    <form class="search-form" action="">
+        <div class="row">
+        <div class="col-lg-3">
+            <div class="form-group">
+                <select class="form-control" id="exampleSelect1" name="project">
+                    <option value="0">All project</option>
+                    {% for project in projects %}
+                    <option value="{{ project.pk }}" {% if project.pk == project_selected_id %} selected {% endif %} >{{ project.name }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
         </div>
-    </body>
-</html>
+        <div class="col-lg-3">
+            <div class="form-group">
+                <select class="form-control" id="exampleSelect1" name="assignee">
+                    <option value="0">All assignee</option>
+                    {% for user in users %}
+                    <option value="{{ user.pk }}" {% if user.pk == assignee_selected_id %} selected {% endif %} >{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="form-group">
+                <select class="form-control" id="exampleSelect1" name="time">
+                    <option value="0">All days</option>
+                    {% for time_option in time_options %}
+                    <option value="{{ time_option }}" {% if time_option == time_selected %} selected {% endif %}>{{ time_option }} days</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="form-group">
+                <select class="form-control" id="exampleSelect1" name="author">
+                    <option value="0">All author</option>
+                    {% for user in users %}
+                    <option value="{{ user.pk }}" {% if user.pk == author_selected %} selected {% endif %} >{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        </div>
+        <button type="submit" class="btn btn-secondary">Search</button>
+    </form>
+
+    {% if show_statistics %}
+    {% if show_assignee_statistics %}
+    <div class="card border-secondary mb-3">
+        <table class="table table-hover">
+            <thead>
+              <tr>
+                  <th scope="col">Assignee</th>
+                  <th scope="col">Total Issues</th>
+                  <th scope="col">Total Time Spent</th>
+                  <th scope="col">Avg Time / Per Issue</th>
+                  <th scope="col">Reopen Count</th>
+              </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th scope="row">{{ infos.assignee_name }}</th>
+                    <td>{{ infos.issue_count }}</td>
+                    <td>{{ infos.total_spent }} days</td>
+                    <td>{{ infos.avg_spent }}</td>
+                    <td>{{ infos.reopen_count }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if show_author_statistics %}
+    <div class="card border-secondary mb-3">
+        <table class="table table-hover">
+            <thead>
+              <tr>
+                  <th scope="col">Author</th>
+                  <th scope="col">Total Issues</th>
+                  <th scope="col">Bug Issues</th>
+                  <th scope="col">Enhancements</th>
+                  <th scope="col">Others</th>
+              </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th scope="row">{{ author_infos.author_name }}</th>
+                    <td>{{ infos.issue_count }}</td>
+                    <td>{{ author_infos.bug_issue_count }}</td>
+                    <td>{{ author_infos.enhancement_count }}</td>
+                    <td>{{ author_infos.others_count }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <form action="{% url 'file-download' %}">
+        <div class="download-inputs">
+            <input name="project" type="text" value='{{ project_selected_id }}'>
+            <input name="assignee" type="text" value='{{ assignee_selected_id }}'>
+            <input name="time" type="text" value='{{ time_selected }}'>
+            <input name="author" type="text" value='{{ author_selected }}'>
+        </div>
+        <button type="submit" class="btn btn-outline-primary">
+            Download
+        </button>
+    </form>
+    {% endif %}
+
+    <div class="table-container">
+        <table class="table table-hover">
+            <thead>
+              <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Issue Title</th>
+                  <th scope="col">Start Doing</th>
+                  <th scope="col">Closed</th>
+                  <th scope="col">Time Spent</th>
+                  <th scope="col">Reopens</th>
+              </tr>
+            </thead>
+            <tbody>
+                {% for issue in issues %}
+                <tr>
+                    <th scope="row"><a href="{{ issue.issue_link }}">{{ issue.number }}</a></th>
+                    <td title="{{ issue.title }}">{{ issue.title |truncatechars:30 }}</td>
+                    <td>{{ issue.started }}</td>
+                    <td>{{ issue.closed }}</td>
+                    <td>{{ issue.time_spent_label }}</td>
+                    <td>{{ issue.reopen_times }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="pagination alert alert-dismissible alert-secondary">
+        <span class="step-links">
+            {% if issues.has_previous %}
+                <a href="?project={{ project_selected_id }}&assignee={{ assignee_selected_id }}&time={{ time_selected }}&page={{ issues.previous_page_number }}">previous</a>
+            {% endif %}
+     
+            <span class="current">
+                Page {{ issues.number }} of {{ issues.paginator.num_pages }}.
+            </span>
+     
+            {% if issues.has_next %}
+                <a href="?project={{ project_selected_id }}&assignee={{ assignee_selected_id }}&time={{ time_selected }}&page={{ issues.next_page_number }}">next</a>
+            {% endif %}
+        </span>
+    </div>
+{% endblock %}

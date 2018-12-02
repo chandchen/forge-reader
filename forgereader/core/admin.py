@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from forgereader.core.models import (
-    User, Label, Milestone, Issue, Project, Action)
+    User, Label, Milestone, Issue, Project, Action, SyncInfo)
 
 
 class UserAdmin(admin.ModelAdmin):
@@ -42,9 +42,15 @@ class ActionAdmin(admin.ModelAdmin):
     search_fields = ('issue__title', 'action')
 
 
+class SyncInfoAdmin(admin.ModelAdmin):
+    model = SyncInfo
+    list_display = ('owner', 'when')
+
+
 admin.site.register(User, UserAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(Label, LabelAdmin)
 admin.site.register(Milestone, MilestoneAdmin)
 admin.site.register(Issue, IssueAdmin)
 admin.site.register(Action, ActionAdmin)
+admin.site.register(SyncInfo, SyncInfoAdmin)

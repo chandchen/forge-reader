@@ -17,6 +17,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 
 from forgereader.core.views import (
     IssueListView, UserListView, ProjectListView, SyncView, Download)
@@ -24,6 +25,8 @@ from forgereader.core.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('accounts/login/', auth_views.LoginView.as_view(
+        template_name='core/login.html')),
     path('issues/', IssueListView.as_view(), name='issue-list'),
     path('users/', UserListView.as_view(), name='user-list'),
     path('', ProjectListView.as_view(), name='project-list'),

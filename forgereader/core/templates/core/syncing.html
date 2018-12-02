@@ -1,0 +1,53 @@
+{% extends 'core/base.html' %}
+{% block title %}Syncing &bull; ForkLab{% endblock %}
+{% block content %}
+    {% if msg == 'success' %}
+    <div class="alert alert-dismissible alert-success">
+      <strong>Well done!</strong> You successfully update this database, <a href="/" class="alert-link">back to dashboard</a>.
+    </div>
+    {% endif %}
+
+    <form>
+      <fieldset>
+        <fieldset class="form-group">
+          <legend>Update Basic Infos</legend>
+          <div class="form-check">
+            <label class="form-check-label">
+              <input class="form-check-input" type="checkbox" name="info" value="1" checked="">
+              Projects / Members / Labels / Milestones
+            </label>
+          </div>
+
+        </fieldset>
+
+        <fieldset class="form-group">
+          <legend>Update Issue details (This might take a long time!!!)</legend>
+          <div class="form-check">
+            <label class="form-check-label">
+              <input type="radio" class="form-check-input" name="record" id="optionsRadios1" value="0" checked="">
+              Don't update any records
+            </label>
+          </div>
+          <div class="form-check">
+          <label class="form-check-label">
+              <input type="radio" class="form-check-input" name="record" id="optionsRadios2" value="100">
+              Update last 100 records
+            </label>
+          </div>
+          <div class="form-check">
+          <label class="form-check-label">
+              <input type="radio" class="form-check-input" name="record" id="optionsRadios2" value="300">
+              Update last 300 records
+            </label>
+          </div>
+          <div class="form-check">
+          <label class="form-check-label">
+              <input type="radio" class="form-check-input" name="record" id="optionsRadios3" value="999">
+              Update all records, will take a long time !!!
+            </label>
+          </div>
+        </fieldset>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </fieldset>
+    </form>
+{% endblock %}

@@ -1,88 +1,31 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width,initial-scale=1.0">
-      <title>Projects &bull; Dashboard</title>
-      <link rel="stylesheet" type="text/css" href="{% static "core/css/bootstrap.min.css" %}">
-      <style type="text/css">
-            .container {
-                padding-top: 75px;
-            }
-            .container .pagination {
-                margin-top: 10px
-            }
+{% extends 'core/base.html' %}
+{% block title %}Projects &bull; ForkLab{% endblock %}
+{% block content %}
+    <div class="alert alert-dismissible alert-info">
+      <strong>Heads up!</strong> This database last update was on {{ last_updated }}
+    </div>
 
-            .navbar {
-                position: fixed;
-                top: 0;
-                z-index: 1;
-                width: 100%;
-            }
-      </style>
-    </head>
-    <body>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-          <a class="navbar-brand" href="{{ forge_url }}">GitLab</a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor03" aria-controls="navbarColor03" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-
-          <div class="collapse navbar-collapse" id="navbarColor03">
-            <ul class="navbar-nav mr-auto">
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'project-list' %}">Projects</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'issue-list' %}">Issues</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Milestone</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Labels</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'user-list' %}">Members</a>
-              </li>
-            </ul>
-            <form class="form-inline my-2 my-lg-0" action="{% url 'syncing' %}" method="GET">
-              <button class="btn btn-secondary my-2 my-sm-0" type="submit">Sync</a></button>
-            </form>
-          </div>
-        </nav>
-
-        <div class="container">
-            {% if msg == 'ok' %}
-            <div class="progress">
-              <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 100%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100">Up to date!</div>
-            </div>
+    <ul class="list-group">
+        {% for project in projects %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+        <a href="issues/?project={{ project.pk }}">{{ namespace }} / {{ project.name }}</a>
+            <span class="badge badge-primary badge-pill">{{ project.issue_count }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    <div class="pagination alert alert-dismissible alert-secondary">
+        <span class="step-links">
+            {% if projects.has_previous %}
+                <a href="?page={{ projects.previous_page_number }}">previous</a>
             {% endif %}
-
-            <ul class="list-group">
-                {% for project in projects %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                <a href="issues/?project={{ project.pk }}">{{ namespace }} / {{ project.name }}</a>
-                    <span class="badge badge-primary badge-pill">{{ project.issue_count }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-            <div class="pagination alert alert-dismissible alert-secondary">
-                <span class="step-links">
-                    {% if projects.has_previous %}
-                        <a href="?page={{ projects.previous_page_number }}">previous</a>
-                    {% endif %}
-             
-                    <span class="current">
-                        Page {{ projects.number }} of {{ projects.paginator.num_pages }}.
-                    </span>
-             
-                    {% if projects.has_next %}
-                        <a href="?page={{ projects.next_page_number }}">next</a>
-                    {% endif %}
-                </span>
-            </div>
-        </div>
-    </body>
-</html>
+     
+            <span class="current">
+                Page {{ projects.number }} of {{ projects.paginator.num_pages }}.
+            </span>
+     
+            {% if projects.has_next %}
+                <a href="?page={{ projects.next_page_number }}">next</a>
+            {% endif %}
+        </span>
+    </div>
+{% endblock %}

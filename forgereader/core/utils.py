@@ -369,8 +369,7 @@ def update_remote_data():
         for project in projects:
             update_label_data(project=project)
             update_milestone_data(project=project)
-            # update_issue_data(project=project)
-    print('Greeting, All data up to date!')
+    return True
 
 
 def webdriver_login(driver, account, passwd):
@@ -519,26 +518,27 @@ def fetch_issue_detail_info(driver, issue_url, num, project):
         print('WARNING: Failed in #{}'.format(num))
 
 
-def update_issue_infos(project):
+def update_issue_infos(index):
     driver = webdriver.Chrome()
     driver.get(settings.SITE_URL)
     driver.maximize_window()
     driver = webdriver_login(
         driver, settings.USERNAME, settings.PASSWORD)
-    url = settings.SITE_URL + '/{}/issues'.format(project.repo_name)
-    driver.get(url)
-    # driver.implicitly_wait(10)
-    issue_count = driver.find_element_by_id(
-        'state-all').find_element_by_class_name('badge').text.replace(',', '')
+    projects = Project.objects.filter(name__in=settings.REPO_NAME)
+    for project in projects:
+        url = settings.SITE_URL + '/{}/issues'.format(project.repo_name)
+        driver.get(url)
+        issue_count = driver.find_element_by_id(
+            'state-all').find_element_by_class_name(
+            'badge').text.replace(',', '')
 
-    start_index = 1
-    if project.name == 'channelfix':
-        start_index = int(issue_count) - 500
-    for i in range(start_index, int(issue_count) + 1):
-        issue_url = '{}/{}'.format(url, i)
-        fetch_issue_detail_info(driver, issue_url, i, project)
+        start_index = int(issue_count) - index
+        start_index = 1 if start_index < 1 and index >= 999 else start_index
+        for i in range(start_index, int(issue_count) + 1):
+            issue_url = '{}/{}'.format(url, i)
+            fetch_issue_detail_info(driver, issue_url, i, project)
     driver.quit()
-    print('Greeting, All issues up to date!')
+    return True
 
 
 def generate_csv_file(issues, file_name):
@@ -572,9 +572,4 @@ def update_issue_time_infos():
         issue.started = issue.started_datetime
         issue.closed = issue.closed_datetime
         issue.save(update_fields=['started', 'closed'])
-        # if issue.started is None:
-        #     print('{}-#{}-no-doing-date'.format(
-        #         issue.project.name, issue.number))
-    no_start_date_count = Issue.objects.filter(started__isnull=True).count()
-    print('There are {} issues with None started date!'.format(
-        no_start_date_count))
+    return True

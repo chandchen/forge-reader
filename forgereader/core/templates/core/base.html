@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <title>{% block title %}ForkLab &bull; Dashboard{% endblock %}</title>
+        <link rel="stylesheet" type="text/css" href="{% static "core/css/bootstrap.min.css" %}">
+        <style type="text/css">
+            .container {
+                padding-top: 75px;
+            }
+            .container .pagination {
+                margin-top: 10px
+            }
+            .navbar {
+                position: fixed;
+                top: 0;
+                z-index: 1;
+                width: 100%;
+            }
+            .table-container {
+                padding-top: 16px;
+            }
+            .search-form {
+                padding-bottom: 16px;
+            }
+            .download-inputs {
+                display: none;
+            }      
+        </style>
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="/">ForkLab</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor03" aria-controls="navbarColor03" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarColor03">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                      <a class="nav-link" href="{% url 'project-list' %}">Projects</a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="{% url 'issue-list' %}">Issues</a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Milestone</a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="{% url 'user-list' %}">Members</a>
+                    </li>
+                </ul>
+                <form class="form-inline my-2 my-lg-0" action="{% url 'syncing' %}" method="GET">
+                    <button class="btn btn-secondary my-2 my-sm-0" type="submit">Sync</a></button>
+                </form>
+            </div>
+        </nav>
+
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </body>
+</html>
