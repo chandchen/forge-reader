@@ -533,7 +533,7 @@ def update_issue_infos(index):
             'badge').text.replace(',', '')
 
         start_index = int(issue_count) - index
-        start_index = 1 if start_index < 1 and index >= 999 else start_index
+        start_index = 1 if start_index < 1 or index >= 999 else start_index
         for i in range(start_index, int(issue_count) + 1):
             issue_url = '{}/{}'.format(url, i)
             fetch_issue_detail_info(driver, issue_url, i, project)
@@ -571,6 +571,7 @@ def update_issue_time_infos():
     for issue in closed_issues:
         issue.started = issue.started_datetime
         issue.closed = issue.closed_datetime
+        issue.save(update_fields=['started', 'closed'])
 
         doing_actions = issue.actions.filter(
             action__icontains='added Doing').order_by('when')
@@ -578,5 +579,4 @@ def update_issue_time_infos():
             if issue.assignee != action.owner:
                 if action.owner not in issue.participants.all():
                     issue.participants.add(action.owner)
-        issue.save(update_fields=['started', 'closed', 'participated'])
     return True

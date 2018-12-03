@@ -176,9 +176,18 @@ class Issue(models.Model):
     def participation(self):
         participant_list = []
         for participant in self.participants.all():
+            participated_time = self.participated(participant)
+            if participated_time and self.closed_datetime:
+                time_spent = (
+                    self.closed_datetime - participated_time).days
+                if time_spent <= 1:
+                    participated_time_spent = '1 day'
+                else:
+                    participated_time_spent = '{} days'.format(time_spent)
             dic = {
                 'username': participant.username,
-                'participated_time': self.participated(participant)
+                'participated_time': participated_time,
+                'participated_time_spent': participated_time_spent,
             }
             participant_list.append(dic)
         return participant_list
