@@ -508,7 +508,9 @@ def fetch_issue_detail_info(driver, issue_url, num, project):
             defaults=contents)
 
         if label_list:
-            labels = Label.objects.filter(name__in=label_list)
+            # Remove all labels before updating labels
+            issue.labels.clear()
+            labels = Label.objects.filter(name__in=label_list, project=project)
             if labels.exists():
                 issue.labels.add(*labels)
 

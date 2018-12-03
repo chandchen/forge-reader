@@ -165,6 +165,13 @@ class Issue(models.Model):
             label_list.append(label.name)
         return label_list
 
+    @property
+    def labels_string(self):
+        if self.labels_display:
+            return ', '.join(self.labels_display)
+
+        return '-'
+
     def participated(self, user):
         action = self.actions.filter(
             owner=user, action__icontains='added Doing').first()
@@ -177,6 +184,7 @@ class Issue(models.Model):
         participant_list = []
         for participant in self.participants.all():
             participated_time = self.participated(participant)
+            participated_time_spent = '-'
             if participated_time and self.closed_datetime:
                 time_spent = (
                     self.closed_datetime - participated_time).days
@@ -184,6 +192,8 @@ class Issue(models.Model):
                     participated_time_spent = '1 day'
                 else:
                     participated_time_spent = '{} days'.format(time_spent)
+                participated_time = participated_time.strftime(
+                    "%Y-%m-%d %H:%M")
             dic = {
                 'username': participant.username,
                 'participated_time': participated_time,
@@ -191,6 +201,15 @@ class Issue(models.Model):
             }
             participant_list.append(dic)
         return participant_list
+
+    @property
+    def participation_string(self):
+        if self.participation:
+            user_list = []
+            for user in self.participation:
+                user_list.append(user['username'])
+            return ', '.join(user_list)
+        return '-'
 
 
 class Action(models.Model):

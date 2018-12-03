@@ -57,10 +57,17 @@ class IssueListView(TemplateView):
             issues = Issue.objects.filter(**filters).order_by('-number')
         issue_count = issues.count()
 
+        assignee_count = 0
+        participant_count = 0
+        if assignee_selected_id != 0:
+            assignee_count = issues.filter(assignee=assignee).count()
+            participant_count = issues.filter(participants=assignee).count()
+
         total_time = 0
         avg_time_spent = 0
         bug_issue_count = 0
         enhancement_count = 0
+        feature_count = 0
 
         reopen_count = 0
         if show_statistics:
@@ -72,6 +79,8 @@ class IssueListView(TemplateView):
                     bug_issue_count += 1
                 if 'enhancement' in label_string:
                     enhancement_count += 1
+                if 'feature' in label_string:
+                    feature_count += 1
         if issue_count and total_time:
             avg_time_spent = round(total_time / issue_count)
 
@@ -102,13 +111,19 @@ class IssueListView(TemplateView):
             'total_spent': total_time,
             'avg_spent': avg_time_spent_label,
             'reopen_count': reopen_count,
+            'assignee_count': assignee_count,
+            'participant_count': participant_count,
         }
+
+        others_count = issue_count - (
+            bug_issue_count + enhancement_count + feature_count)
 
         author_infos = {
             'author_name': author_name,
             'bug_issue_count': bug_issue_count,
             'enhancement_count': enhancement_count,
-            'others_count': issue_count - bug_issue_count - enhancement_count,
+            'feature_count': feature_count,
+            'others_count': others_count,
         }
 
         contents = {

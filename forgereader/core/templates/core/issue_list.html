@@ -57,10 +57,15 @@
         <table class="table table-hover">
             <thead>
               <tr>
-                  <th scope="col">Assignee</th>
-                  <th scope="col">Total Issues</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Total Issue</th>
+                  <th scope="col">Bug</th>
+                  <th scope="col">Enhancement</th>
+                  <th scope="col">Feature</th>
+                  <th scope="col">Assignee Issue</th>
+                  <th scope="col">Participants</th>
                   <th scope="col">Total Time Spent</th>
-                  <th scope="col">Avg Time / Per Issue</th>
+                  <th scope="col">Avg Time Spent</th>
                   <th scope="col">Reopen Count</th>
               </tr>
             </thead>
@@ -68,6 +73,11 @@
                 <tr>
                     <th scope="row">{{ infos.assignee_name }}</th>
                     <td>{{ infos.issue_count }}</td>
+                    <td>{{ author_infos.bug_issue_count }}</td>
+                    <td>{{ author_infos.enhancement_count }}</td>
+                    <td>{{ author_infos.feature_count }}</td>
+                    <td>{{ infos.assignee_count }}</td>
+                    <td>{{ infos.participant_count }}</td>
                     <td>{{ infos.total_spent }} days</td>
                     <td>{{ infos.avg_spent }}</td>
                     <td>{{ infos.reopen_count }}</td>
@@ -86,6 +96,7 @@
                   <th scope="col">Total Issues</th>
                   <th scope="col">Bug Issues</th>
                   <th scope="col">Enhancements</th>
+                  <th scope="col">Feature</th>
                   <th scope="col">Others</th>
               </tr>
             </thead>
@@ -95,6 +106,7 @@
                     <td>{{ infos.issue_count }}</td>
                     <td>{{ author_infos.bug_issue_count }}</td>
                     <td>{{ author_infos.enhancement_count }}</td>
+                    <td>{{ author_infos.feature_count }}</td>
                     <td>{{ author_infos.others_count }}</td>
                 </tr>
             </tbody>
@@ -121,6 +133,8 @@
               <tr>
                   <th scope="col">#</th>
                   <th scope="col">Issue Title</th>
+                  <th scope="col">Labels</th>
+                  <th scope="col">Participation</th>
                   <th scope="col">Start Doing</th>
                   <th scope="col">Closed</th>
                   <th scope="col">Time Spent</th>
@@ -132,6 +146,8 @@
                 <tr>
                     <th scope="row"><a href="{{ issue.issue_link }}">{{ issue.number }}</a></th>
                     <td title="{{ issue.title }}">{{ issue.title |truncatechars:30 }}</td>
+                    <td>{{ issue.labels_string }}</td>
+                    <td>{{ issue.participation_string }}</td>
                     <td>{{ issue.started }}</td>
                     <td>{{ issue.closed }}</td>
                     <td>{{ issue.time_spent_label }}</td>
