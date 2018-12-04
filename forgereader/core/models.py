@@ -10,6 +10,12 @@ ISSUE_STATUS_CHOICES = (
 )
 
 
+def formated_datetime(original):
+    if original:
+        return original.strftime("%Y-%m-%d %H:%M")
+    return '-'
+
+
 class User(models.Model):
     username = models.CharField(max_length=30, unique=True)
     full_name = models.CharField(max_length=150, blank=True)
@@ -124,6 +130,10 @@ class Issue(models.Model):
             return None
 
     @property
+    def started_string(self):
+        return formated_datetime(self.started)
+
+    @property
     def closed_datetime(self):
         action = self.actions.filter(
             action__icontains='closed').order_by('created').last()
@@ -131,6 +141,10 @@ class Issue(models.Model):
             return action.created
         else:
             return None
+
+    @property
+    def closed_string(self):
+        return formated_datetime(self.closed)
 
     @property
     def time_spent(self):
@@ -195,9 +209,9 @@ class Issue(models.Model):
                 participated_time = participated_time.strftime(
                     "%Y-%m-%d %H:%M")
             dic = {
-                'username': participant.username,
-                'participated_time': participated_time,
-                'participated_time_spent': participated_time_spent,
+                'name': participant.username,
+                'time': participated_time,
+                'time_spent': participated_time_spent,
             }
             participant_list.append(dic)
         return participant_list
@@ -207,8 +221,18 @@ class Issue(models.Model):
         if self.participation:
             user_list = []
             for user in self.participation:
-                user_list.append(user['username'])
+                user_list.append(user['name'])
             return ', '.join(user_list)
+        return '-'
+
+    @property
+    def participation_string_with_time(self):
+        if self.participation:
+            contents = []
+            for user in self.participation:
+                u_string = '{}({})'.format(user['name'], user['time'])
+                contents.append(u_string)
+            return ', '.join(contents)
         return '-'
 
 

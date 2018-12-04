@@ -58,15 +58,18 @@
             <thead>
               <tr>
                   <th scope="col">Name</th>
-                  <th scope="col">Total Issue</th>
-                  <th scope="col">Bug</th>
-                  <th scope="col">Enhancement</th>
-                  <th scope="col">Feature</th>
-                  <th scope="col">Assignee Issue</th>
-                  <th scope="col">Participants</th>
+                  <th scope="col">Total</th>
+                  <th scope="col">*Bug</th>
+                  <th scope="col">*Enhance</th>
+                  <th scope="col">*Feature</th>
+                  <th scope="col">*Others</th>
+
+                  <th scope="col">#Assigned</th>
+                  <th scope="col">#Participated</th>
+
                   <th scope="col">Total Time Spent</th>
                   <th scope="col">Avg Time Spent</th>
-                  <th scope="col">Reopen Count</th>
+                  <th scope="col">Reopens</th>
               </tr>
             </thead>
             <tbody>
@@ -76,6 +79,7 @@
                     <td>{{ author_infos.bug_issue_count }}</td>
                     <td>{{ author_infos.enhancement_count }}</td>
                     <td>{{ author_infos.feature_count }}</td>
+                    <td>{{ author_infos.others_count }}</td>
                     <td>{{ infos.assignee_count }}</td>
                     <td>{{ infos.participant_count }}</td>
                     <td>{{ infos.total_spent }} days</td>
@@ -147,9 +151,9 @@
                     <th scope="row"><a href="{{ issue.issue_link }}">{{ issue.number }}</a></th>
                     <td title="{{ issue.title }}">{{ issue.title |truncatechars:30 }}</td>
                     <td>{{ issue.labels_string }}</td>
-                    <td>{{ issue.participation_string }}</td>
-                    <td>{{ issue.started }}</td>
-                    <td>{{ issue.closed }}</td>
+                    <td>{{ issue.participation_string_with_time }}</td>
+                    <td>{{ issue.started_string }}</td>
+                    <td>{{ issue.closed_string }}</td>
                     <td>{{ issue.time_spent_label }}</td>
                     <td>{{ issue.reopen_times }}</td>
                 </tr>

@@ -558,9 +558,9 @@ def generate_csv_file(issues, file_name):
         issue_row = [
             issue.number, issue.title, issue.status_display,
             issue.author.username, assignee,
-            issue.started_datetime, issue.closed_datetime,
-            issue.time_spent_label, issue.participation,
-            issue.project.repo_name, milestone, issue.labels_display
+            issue.started_string, issue.closed_string,
+            issue.time_spent_label, issue.participation_string_with_time,
+            issue.project.repo_name, milestone, issue.labels_string
         ]
         search_file.writerow(issue_row)
 
